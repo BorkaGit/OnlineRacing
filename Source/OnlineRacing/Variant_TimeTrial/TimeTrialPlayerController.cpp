@@ -1,156 +1,164 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "TimeTrialPlayerController.h"
-#include "TimeTrialUI.h"
-#include "Engine/World.h"
-#include "TimeTrialGameMode.h"
-#include "TimeTrialTrackGate.h"
+
+#include "Blueprint/UserWidget.h"
+#include "ChaosWheeledVehicleMovementComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "GameFramework/GameModeBase.h"
 #include "InputMappingContext.h"
-#include "OnlineRacingUI.h"
-#include "OnlineRacingPawn.h"
-#include "ChaosWheeledVehicleMovementComponent.h"
-#include "Blueprint/UserWidget.h"
-#include "OnlineRacing.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/PlayerStart.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
-void ATimeTrialPlayerController::BeginPlay()
-{
-	Super::BeginPlay();
-}
+#include "OnlineRacing.h"
+#include "OnlineRacingPawn.h"
+#include "OnlineRacingUI.h"
+#include "TimeTrialGameMode.h"
+#include "TimeTrialTrackGate.h"
+#include "TimeTrialUI.h"
 
 void ATimeTrialPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
-	// only add IMCs for local player controllers
-	if (IsLocalPlayerController())
+	if (!IsLocalPlayerController())
 	{
-		// Add Input Mapping Contexts
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
-		{
-			for (UInputMappingContext* CurrentContext : DefaultMappingContexts)
-			{
-				Subsystem->AddMappingContext(CurrentContext, 0);
-			}
+		return;
+	}
 
-			// only add these IMCs if we're not using mobile touch input
-			if (!ShouldUseTouchControls())
+	UEnhancedInputLocalPlayerSubsystem* const InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+	if (IsValid(InputSubsystem))
+	{
+		for (UInputMappingContext* const MappingContext : DefaultMappingContexts)
+		{
+			if (IsValid(MappingContext))
 			{
-				for (UInputMappingContext* CurrentContext : MobileExcludedMappingContexts)
+				InputSubsystem->AddMappingContext(MappingContext, 0);
+			}
+		}
+
+		if (!ShouldUseTouchControls())
+		{
+			for (UInputMappingContext* const MappingContext : MobileExcludedMappingContexts)
+			{
+				if (IsValid(MappingContext))
 				{
-					Subsystem->AddMappingContext(CurrentContext, 0);
+					InputSubsystem->AddMappingContext(MappingContext, 0);
 				}
 			}
+		}
 
-			if (bUseSteeringWheelControls)
-			{
-				Subsystem->AddMappingContext(SteeringWheelInputMappingContext, 0);
-			}
+		if (bUseSteeringWheelControls && IsValid(SteeringWheelInputMappingContext.Get()))
+		{
+			InputSubsystem->AddMappingContext(SteeringWheelInputMappingContext, 0);
 		}
 	}
 
-	// only spawn UI on local player controllers
-	if (IsLocalPlayerController())
+	if (ShouldUseTouchControls())
 	{
-		if (ShouldUseTouchControls())
+		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
+		if (IsValid(MobileControlsWidget))
 		{
-			// spawn the mobile controls widget
-			MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
-			if (MobileControlsWidget)
-			{
-				// add the controls to the player screen
-				MobileControlsWidget->AddToPlayerScreen(0);
-
-			} else {
-
-				UE_LOG(LogOnlineRacing, Error, TEXT("Could not spawn mobile controls widget."));
-
-			}
+			MobileControlsWidget->AddToPlayerScreen(0);
 		}
-
-		// create the UI widget
-		UIWidget = CreateWidget<UTimeTrialUI>(this, UIWidgetClass);
-
-		if (UIWidget)
+		else
 		{
-			UIWidget->AddToPlayerScreen(0);
-
-			// subscribe to the race start delegate
-			UIWidget->OnRaceStart.AddDynamic(this, &ATimeTrialPlayerController::StartRace);
-
-		} else {
-
-			UE_LOG(LogOnlineRacing, Error, TEXT("Could not spawn Time Trial UI widget."));
-
+			UE_LOG(LogOnlineRacing, Error, TEXT("[Client][TimeTrial] Failed to create mobile controls widget."));
 		}
-		
+	}
 
-		// spawn the UI widget and add it to the viewport
-		VehicleUI = CreateWidget<UOnlineRacingUI>(this, VehicleUIClass);
+	UIWidget = CreateWidget<UTimeTrialUI>(this, UIWidgetClass);
+	if (IsValid(UIWidget))
+	{
+		UIWidget->AddToPlayerScreen(0);
+		UIWidget->OnRaceStart.AddDynamic(this, &ATimeTrialPlayerController::StartRace);
+	}
+	else
+	{
+		UE_LOG(LogOnlineRacing, Error, TEXT("[Client][TimeTrial] Failed to create time-trial UI."));
+	}
 
-		if (VehicleUI)
-		{
-			VehicleUI->AddToPlayerScreen(0);
-
-		} else {
-
-			UE_LOG(LogOnlineRacing, Error, TEXT("Could not spawn vehicle UI widget."));
-
-		}
+	VehicleUI = CreateWidget<UOnlineRacingUI>(this, VehicleUIClass);
+	if (IsValid(VehicleUI))
+	{
+		VehicleUI->AddToPlayerScreen(0);
+	}
+	else
+	{
+		UE_LOG(LogOnlineRacing, Error, TEXT("[Client][TimeTrial] Failed to create vehicle UI."));
 	}
 }
 
 void ATimeTrialPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	CacheVehiclePawn();
+}
 
-	// get a pointer to the controlled pawn
-	VehiclePawn = CastChecked<AOnlineRacingPawn>(InPawn);
+void ATimeTrialPlayerController::OnRep_Pawn()
+{
+	Super::OnRep_Pawn();
+	CacheVehiclePawn();
+}
 
-	// subscribe to the pawn's OnDestroyed delegate
-	VehiclePawn->OnDestroyed.AddDynamic(this, &ATimeTrialPlayerController::OnPawnDestroyed);
+void ATimeTrialPlayerController::CacheVehiclePawn()
+{
+	AOnlineRacingPawn* const NewVehiclePawn = Cast<AOnlineRacingPawn>(GetPawn());
+	if (VehiclePawn == NewVehiclePawn)
+	{
+		return;
+	}
 
-	// disable input on the pawn if the race hasn't started yet
+	if (IsValid(VehiclePawn))
+	{
+		VehiclePawn->OnDestroyed.RemoveDynamic(this, &ATimeTrialPlayerController::OnPawnDestroyed);
+	}
+
+	VehiclePawn = NewVehiclePawn;
+	if (!IsValid(VehiclePawn))
+	{
+		return;
+	}
+
+	VehiclePawn->OnDestroyed.AddUniqueDynamic(this, &ATimeTrialPlayerController::OnPawnDestroyed);
 	if (!bRaceStarted)
 	{
 		VehiclePawn->DisableInput(this);
-	}	
+	}
 }
 
-void ATimeTrialPlayerController::Tick(float Delta)
+void ATimeTrialPlayerController::Tick(const float DeltaSeconds)
 {
-	Super::Tick(Delta);
+	Super::Tick(DeltaSeconds);
 
-	if (IsValid(VehiclePawn) && IsValid(VehicleUI))
+	if (!IsValid(VehiclePawn) || !IsValid(VehicleUI))
 	{
-		VehicleUI->UpdateSpeed(VehiclePawn->GetChaosVehicleMovement()->GetForwardSpeed());
-		VehicleUI->UpdateGear(VehiclePawn->GetChaosVehicleMovement()->GetCurrentGear());
+		return;
 	}
+
+	const UChaosWheeledVehicleMovementComponent* const MovementComponent = VehiclePawn->GetChaosVehicleMovement();
+	if (!IsValid(MovementComponent))
+	{
+		return;
+	}
+
+	VehicleUI->UpdateSpeed(MovementComponent->GetForwardSpeed());
+	VehicleUI->UpdateGear(MovementComponent->GetCurrentGear());
 }
 
 void ATimeTrialPlayerController::StartRace()
 {
-	// get the finish line from the game mode
-	if (ATimeTrialGameMode* GM = Cast<ATimeTrialGameMode>(GetWorld()->GetAuthGameMode()))
+	ATimeTrialGameMode* const GameMode = Cast<ATimeTrialGameMode>(GetWorld()->GetAuthGameMode());
+	if (IsValid(GameMode) && IsValid(GameMode->GetFinishLine()))
 	{
-		SetTargetGate(GM->GetFinishLine()->GetNextMarker());
+		SetTargetGate(GameMode->GetFinishLine()->GetNextMarker());
 	}
 
-	// raise the race started flag so any respawned vehicles start with controls unlocked 
 	bRaceStarted = true;
-
-	// start the first lap
 	CurrentLap = 0;
 	IncrementLapCount();
 
-	// enable input on the pawn
-	if (GetPawn())
+	if (IsValid(GetPawn()))
 	{
 		GetPawn()->EnableInput(this);
 	}
@@ -158,14 +166,15 @@ void ATimeTrialPlayerController::StartRace()
 
 void ATimeTrialPlayerController::IncrementLapCount()
 {
-	// increment the lap counter
 	++CurrentLap;
 
-	// update the UI
-	UIWidget->UpdateLapCount(CurrentLap, GetWorld()->GetTimeSeconds());
+	if (IsValid(UIWidget))
+	{
+		UIWidget->UpdateLapCount(CurrentLap, GetWorld()->GetTimeSeconds());
+	}
 }
 
-ATimeTrialTrackGate* ATimeTrialPlayerController::GetTargetGate()
+ATimeTrialTrackGate* ATimeTrialPlayerController::GetTargetGate() const
 {
 	return TargetGate.Get();
 }
@@ -177,25 +186,24 @@ void ATimeTrialPlayerController::SetTargetGate(ATimeTrialTrackGate* Gate)
 
 void ATimeTrialPlayerController::OnPawnDestroyed(AActor* DestroyedPawn)
 {
-	// find the player start
-	TArray<AActor*> ActorList;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), ActorList);
+	VehiclePawn = nullptr;
 
-	if (ActorList.Num() > 0)
+	if (!HasAuthority())
 	{
-		// spawn a vehicle at the player start
-		const FTransform SpawnTransform = ActorList[0]->GetActorTransform();
-
-		if (AOnlineRacingPawn* RespawnedVehicle = GetWorld()->SpawnActor<AOnlineRacingPawn>(VehiclePawnClass, SpawnTransform))
-		{
-			// possess the vehicle
-			Possess(RespawnedVehicle);
-		}
+		return;
 	}
+
+	AGameModeBase* const GameMode = GetWorld()->GetAuthGameMode();
+	if (!IsValid(GameMode))
+	{
+		UE_LOG(LogOnlineRacing, Warning, TEXT("[Server][TimeTrial] Cannot respawn %s because no authoritative GameMode exists."), *GetNameSafe(this));
+		return;
+	}
+
+	GameMode->RestartPlayer(this);
 }
 
 bool ATimeTrialPlayerController::ShouldUseTouchControls() const
 {
-	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
 }

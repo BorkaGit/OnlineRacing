@@ -6,121 +6,81 @@
 #include "GameFramework/PlayerController.h"
 #include "TimeTrialPlayerController.generated.h"
 
+class AOnlineRacingPawn;
 class ATimeTrialTrackGate;
-class UTimeTrialUI;
 class UInputMappingContext;
 class UOnlineRacingUI;
-class AOnlineRacingPawn;
+class UTimeTrialUI;
+class UUserWidget;
 
-/**
- *  A simple PlayerController for a Time Trial racing game
- */
-UCLASS(abstract, Config="Game")
+// Legacy Vehicle Template example. Production race state will live in RaceGameState and RacePlayerState.
+UCLASS(Abstract, Config = "Game")
 class ATimeTrialPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
+
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Input Mappings")
+	TArray<TObjectPtr<UInputMappingContext>> DefaultMappingContexts;
 
-	/** Input Mapping Contexts */
-	UPROPERTY(EditAnywhere, Category ="Input|Input Mappings")
-	TArray<UInputMappingContext*> DefaultMappingContexts;
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Input Mappings")
+	TArray<TObjectPtr<UInputMappingContext>> MobileExcludedMappingContexts;
 
-	/** Input Mapping Contexts */
-	UPROPERTY(EditAnywhere, Category="Input|Input Mappings")
-	TArray<UInputMappingContext*> MobileExcludedMappingContexts;
-
-	/** Mobile controls widget to spawn */
-	UPROPERTY(EditAnywhere, Category="Input|Touch Controls")
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Touch Controls")
 	TSubclassOf<UUserWidget> MobileControlsWidgetClass;
 
-	/** Pointer to the mobile controls widget */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UUserWidget> MobileControlsWidget;
 
-	/** If true, the player will use UMG touch controls even if not playing on mobile platforms */
-	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Input|Touch Controls")
 	bool bForceTouchControls = false;
 
-	/** If true, the optional steering wheel input mapping context will be registered */
-	UPROPERTY(EditAnywhere, Category = "Input|Steering Wheel Controls")
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Steering Wheel Controls")
 	bool bUseSteeringWheelControls = false;
 
-	/** Optional Input Mapping Context to be used for steering wheel input.
-	 *  This is added alongside the default Input Mapping Context and does not block other forms of input.
-	 */
-	UPROPERTY(EditAnywhere, Category = "Input|Steering Wheel Controls", meta = (EditCondition = "bUseSteeringWheelControls"))
-	UInputMappingContext* SteeringWheelInputMappingContext;
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Steering Wheel Controls", meta = (EditCondition = "bUseSteeringWheelControls"))
+	TObjectPtr<UInputMappingContext> SteeringWheelInputMappingContext;
 
-	/** Type of UI widget to spawn*/
-	UPROPERTY(EditAnywhere, Category="Time Trial|UI")
+	UPROPERTY(EditDefaultsOnly, Category = "Time Trial|UI")
 	TSubclassOf<UTimeTrialUI> UIWidgetClass;
 
-	/** Pointer to the UI Widget */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UTimeTrialUI> UIWidget;
 
-	/** Type of the UI to spawn */
-	UPROPERTY(EditAnywhere, Category="Vehicle|UI")
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|UI")
 	TSubclassOf<UOnlineRacingUI> VehicleUIClass;
 
-	/** Pointer to the UI widget */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UOnlineRacingUI> VehicleUI;
 
-	/** Next track gate the car should pass */
+	UPROPERTY(Transient)
 	TObjectPtr<ATimeTrialTrackGate> TargetGate;
 
-	/** Lap counter */
-	int32 CurrentLap = 0;
-
-	/** If true, the race has already started */
-	bool bRaceStarted = false;
-
-	/** Type of vehicle to automatically respawn when it's destroyed */
-	UPROPERTY(EditAnywhere, Category="Vehicle|Respawn")
-	TSubclassOf<AOnlineRacingPawn> VehiclePawnClass;
-
-	/** Pointer to the controlled vehicle pawn */
+	UPROPERTY(Transient)
 	TObjectPtr<AOnlineRacingPawn> VehiclePawn;
 
-protected:
-
-	/** Gameplay initialization */
-	virtual void BeginPlay() override;
-
-	/** Input initialization */
-	virtual void SetupInputComponent() override;
-
-	/** Pawn initialization */
-	virtual void OnPossess(APawn* aPawn) override;
+	int32 CurrentLap = 0;
+	bool bRaceStarted = false;
 
 public:
+	virtual void Tick(float DeltaSeconds) override;
 
-	/** UI vehicle state update on tick */
-	virtual void Tick(float Delta) override;
-
-public:
-
-	/** Sets up the race start */
 	UFUNCTION()
 	void StartRace();
 
-	/** Moves on to the next lap */
 	void IncrementLapCount();
-
-	/** Returns the current target track gate */
-	ATimeTrialTrackGate* GetTargetGate();
-
-	/** Sets the target track gate for this player */
+	ATimeTrialTrackGate* GetTargetGate() const;
 	void SetTargetGate(ATimeTrialTrackGate* Gate);
 
 protected:
+	virtual void OnPossess(APawn* InPawn) override;
+	virtual void OnRep_Pawn() override;
+	virtual void SetupInputComponent() override;
 
-	/** Handles pawn destruction and respawning */
+private:
 	UFUNCTION()
 	void OnPawnDestroyed(AActor* DestroyedPawn);
 
-	/** Returns true if the player should use UMG touch controls */
+	void CacheVehiclePawn();
 	bool ShouldUseTouchControls() const;
 };

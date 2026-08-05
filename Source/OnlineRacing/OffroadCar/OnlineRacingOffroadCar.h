@@ -6,35 +6,29 @@
 #include "OnlineRacingPawn.h"
 #include "OnlineRacingOffroadCar.generated.h"
 
-/**
- *  Offroad car wheeled vehicle implementation
- */
-UCLASS(abstract)
+class UStaticMeshComponent;
+
+UCLASS(Abstract)
 class AOnlineRacingOffroadCar : public AOnlineRacingPawn
 {
 	GENERATED_BODY()
-	
-	/** Chassis static mesh */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* Chassis;
 
-	/** FL Tire static mesh */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* TireFrontLeft;
+private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> Chassis;
 
-	/** FR Tire static mesh */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* TireFrontRight;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> TireFrontLeft;
 
-	/** RL Tire static mesh */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* TireRearLeft;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> TireFrontRight;
 
-	/** RR Tire static mesh */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* TireRearRight;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> TireRearLeft;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> TireRearRight;
 
 public:
-
 	AOnlineRacingOffroadCar();
 };

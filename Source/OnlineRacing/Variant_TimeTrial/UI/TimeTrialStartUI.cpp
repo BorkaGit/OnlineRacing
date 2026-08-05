@@ -5,12 +5,10 @@
 
 void UTimeTrialStartUI::StartCountdown()
 {
-	// pass control to BP
 	BP_StartCountdown();
 }
 
 void UTimeTrialStartUI::FinishCountdown()
 {
-	// broadcast the delegate
 	OnCountdownFinished.Broadcast();
 }

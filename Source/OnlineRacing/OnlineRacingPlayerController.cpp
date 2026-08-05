@@ -1,135 +1,168 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "OnlineRacingPlayerController.h"
+
+#include "Blueprint/UserWidget.h"
+#include "ChaosWheeledVehicleMovementComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "Engine/LocalPlayer.h"
+#include "GameFramework/GameModeBase.h"
+#include "InputMappingContext.h"
+#include "Widgets/Input/SVirtualJoystick.h"
+
+#include "OnlineRacing.h"
 #include "OnlineRacingPawn.h"
 #include "OnlineRacingUI.h"
-#include "EnhancedInputSubsystems.h"
-#include "ChaosWheeledVehicleMovementComponent.h"
-#include "Blueprint/UserWidget.h"
-#include "OnlineRacing.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/PlayerStart.h"
-#include "Widgets/Input/SVirtualJoystick.h"
 
 void AOnlineRacingPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	// ensure we're attached to the vehicle pawn so that World Partition streaming works correctly
+
 	bAttachToPawn = true;
+	CacheVehiclePawn();
 }
 
 void AOnlineRacingPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	
-	// only add IMCs for local player controllers
-	if (IsLocalPlayerController())
-	{
-		// Add Input Mapping Contexts
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
-		{
-			for (UInputMappingContext* CurrentContext : DefaultMappingContexts)
-			{
-				Subsystem->AddMappingContext(CurrentContext, 0);
-			}
 
-			// only add these IMCs if we're not using mobile touch input
-			if (!ShouldUseTouchControls())
+	if (!IsLocalPlayerController())
+	{
+		return;
+	}
+
+	UEnhancedInputLocalPlayerSubsystem* const InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+	if (IsValid(InputSubsystem))
+	{
+		for (UInputMappingContext* const MappingContext : DefaultMappingContexts)
+		{
+			if (IsValid(MappingContext))
 			{
-				for (UInputMappingContext* CurrentContext : MobileExcludedMappingContexts)
+				InputSubsystem->AddMappingContext(MappingContext, 0);
+			}
+		}
+
+		if (!ShouldUseTouchControls())
+		{
+			for (UInputMappingContext* const MappingContext : MobileExcludedMappingContexts)
+			{
+				if (IsValid(MappingContext))
 				{
-					Subsystem->AddMappingContext(CurrentContext, 0);
+					InputSubsystem->AddMappingContext(MappingContext, 0);
 				}
 			}
+		}
 
-			if (bUseSteeringWheelControls)
-			{
-				Subsystem->AddMappingContext(SteeringWheelInputMappingContext, 0);
-			}
+		if (bUseSteeringWheelControls && IsValid(SteeringWheelInputMappingContext.Get()))
+		{
+			InputSubsystem->AddMappingContext(SteeringWheelInputMappingContext, 0);
 		}
 	}
 
-	// only spawn UI on local player controllers
-	if (IsLocalPlayerController())
+	if (ShouldUseTouchControls() && !IsValid(MobileControlsWidget))
 	{
-		if (ShouldUseTouchControls())
+		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
+		if (IsValid(MobileControlsWidget))
 		{
-			// spawn the mobile controls widget
-			MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
-			if (MobileControlsWidget)
-			{
-				// add the controls to the player screen
-				MobileControlsWidget->AddToPlayerScreen(0);
-
-			} else {
-
-				UE_LOG(LogOnlineRacing, Error, TEXT("Could not spawn mobile controls widget."));
-
-			}
+			MobileControlsWidget->AddToPlayerScreen(0);
 		}
-		
+		else
+		{
+			UE_LOG(LogOnlineRacing, Error, TEXT("[Client][PlayerController] Failed to create mobile controls widget for %s."), *GetNameSafe(this));
+		}
+	}
 
-		// spawn the UI widget and add it to the viewport
+	if (!IsValid(VehicleUI))
+	{
 		VehicleUI = CreateWidget<UOnlineRacingUI>(this, VehicleUIClass);
-
-		if (VehicleUI)
+		if (IsValid(VehicleUI))
 		{
 			VehicleUI->AddToPlayerScreen(0);
-
-		} else {
-
-			UE_LOG(LogOnlineRacing, Error, TEXT("Could not spawn vehicle UI widget."));
-
+		}
+		else
+		{
+			UE_LOG(LogOnlineRacing, Error, TEXT("[Client][PlayerController] Failed to create vehicle UI for %s."), *GetNameSafe(this));
 		}
 	}
 }
 
-void AOnlineRacingPlayerController::Tick(float Delta)
+void AOnlineRacingPlayerController::Tick(const float DeltaSeconds)
 {
-	Super::Tick(Delta);
+	Super::Tick(DeltaSeconds);
 
-	if (IsValid(VehiclePawn) && IsValid(VehicleUI))
+	if (!IsValid(VehiclePawn) || !IsValid(VehicleUI))
 	{
-		VehicleUI->UpdateSpeed(VehiclePawn->GetChaosVehicleMovement()->GetForwardSpeed());
-		VehicleUI->UpdateGear(VehiclePawn->GetChaosVehicleMovement()->GetCurrentGear());
+		return;
 	}
+
+	const UChaosWheeledVehicleMovementComponent* const MovementComponent = VehiclePawn->GetChaosVehicleMovement();
+	if (!IsValid(MovementComponent))
+	{
+		return;
+	}
+
+	VehicleUI->UpdateSpeed(MovementComponent->GetForwardSpeed());
+	VehicleUI->UpdateGear(MovementComponent->GetCurrentGear());
 }
 
 void AOnlineRacingPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	CacheVehiclePawn();
+}
 
-	// get a pointer to the controlled pawn
-	VehiclePawn = CastChecked<AOnlineRacingPawn>(InPawn);
+void AOnlineRacingPlayerController::OnRep_Pawn()
+{
+	Super::OnRep_Pawn();
+	CacheVehiclePawn();
+}
 
-	// subscribe to the pawn's OnDestroyed delegate
-	VehiclePawn->OnDestroyed.AddDynamic(this, &AOnlineRacingPlayerController::OnPawnDestroyed);
+void AOnlineRacingPlayerController::CacheVehiclePawn()
+{
+	AOnlineRacingPawn* const NewVehiclePawn = Cast<AOnlineRacingPawn>(GetPawn());
+	if (VehiclePawn == NewVehiclePawn)
+	{
+		return;
+	}
+
+	if (IsValid(VehiclePawn))
+	{
+		VehiclePawn->OnDestroyed.RemoveDynamic(this, &AOnlineRacingPlayerController::OnPawnDestroyed);
+	}
+
+	VehiclePawn = NewVehiclePawn;
+	if (IsValid(VehiclePawn))
+	{
+		VehiclePawn->OnDestroyed.AddUniqueDynamic(this, &AOnlineRacingPlayerController::OnPawnDestroyed);
+		return;
+	}
+
+	if (IsValid(GetPawn()))
+	{
+		UE_LOG(LogOnlineRacing, Warning, TEXT("[Role=%s][PlayerController] Pawn %s is not an OnlineRacing vehicle."), *UEnum::GetValueAsString(GetLocalRole()), *GetNameSafe(GetPawn()));
+	}
 }
 
 void AOnlineRacingPlayerController::OnPawnDestroyed(AActor* DestroyedPawn)
 {
-	// find the player start
-	TArray<AActor*> ActorList;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), ActorList);
+	VehiclePawn = nullptr;
 
-	if (ActorList.Num() > 0)
+	if (!HasAuthority())
 	{
-		// spawn a vehicle at the player start
-		const FTransform SpawnTransform = ActorList[0]->GetActorTransform();
-
-		if (AOnlineRacingPawn* RespawnedVehicle = GetWorld()->SpawnActor<AOnlineRacingPawn>(VehiclePawnClass, SpawnTransform))
-		{
-			// possess the vehicle
-			Possess(RespawnedVehicle);
-		}
+		return;
 	}
+
+	AGameModeBase* const GameMode = GetWorld()->GetAuthGameMode();
+	if (!IsValid(GameMode))
+	{
+		UE_LOG(LogOnlineRacing, Warning, TEXT("[Server][PlayerController] Cannot respawn %s because no authoritative GameMode exists."), *GetNameSafe(this));
+		return;
+	}
+
+	GameMode->RestartPlayer(this);
 }
 
 bool AOnlineRacingPlayerController::ShouldUseTouchControls() const
 {
-	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
 }

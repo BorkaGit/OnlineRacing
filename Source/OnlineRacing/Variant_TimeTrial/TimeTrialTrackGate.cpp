@@ -2,49 +2,49 @@
 
 
 #include "TimeTrialTrackGate.h"
-#include "Components/SceneComponent.h"
+
 #include "Components/BoxComponent.h"
+#include "Components/SceneComponent.h"
+
 #include "TimeTrialPlayerController.h"
 
 ATimeTrialTrackGate::ATimeTrialTrackGate()
 {
- 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
 
-	// create the root component
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
-	// create the collision box
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Collision Box"));
 	CollisionBox->SetupAttachment(RootComponent);
 
 	CollisionBox->SetBoxExtent(FVector(1000.0f));
 	CollisionBox->SetLineThickness(32.0f);
 	CollisionBox->bHiddenInGame = false;
-	CollisionBox->SetCollisionProfileName(FName("OverlapAllDynamic"));
-
+	CollisionBox->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 }
 
 void ATimeTrialTrackGate::NotifyActorBeginOverlap(AActor* OtherActor)
 {
-	// get the player controller of the overlapping actor
-	if (ATimeTrialPlayerController* PC = Cast<ATimeTrialPlayerController>(OtherActor->GetInstigatorController()))
+	if (!HasAuthority() || !IsValid(OtherActor))
 	{
-		// is this the current target marker for the player?
-		if (PC->GetTargetGate() == this)
-		{
-			// point the player to the next marker
-			PC->SetTargetGate(NextMarker);
+		return;
+	}
 
-			// if this is the finish line, increment the lap
-			if (bIsFinishLine)
-			{
-				PC->IncrementLapCount();
-			}
-		}
+	ATimeTrialPlayerController* const PlayerController = Cast<ATimeTrialPlayerController>(OtherActor->GetInstigatorController());
+	if (!IsValid(PlayerController) || PlayerController->GetTargetGate() != this)
+	{
+		return;
+	}
+
+	PlayerController->SetTargetGate(NextMarker);
+	if (bIsFinishLine)
+	{
+		PlayerController->IncrementLapCount();
 	}
 }
 
 ATimeTrialTrackGate* ATimeTrialTrackGate::GetNextMarker() const
 {
-	return NextMarker;
+	return NextMarker.Get();
 }

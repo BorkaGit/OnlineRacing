@@ -8,35 +8,28 @@ public class OnlineRacing : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] {
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"ChaosVehicles",
 			"Core",
 			"CoreUObject",
 			"Engine",
-			"InputCore",
 			"EnhancedInput",
-			"ChaosVehicles",
+			"InputCore",
 			"PhysicsCore",
-			"UMG",
-			"Slate"
+			"UMG"
 		});
 
-		PublicIncludePaths.AddRange(new string[] {
+		PublicIncludePaths.AddRange(new string[]
+		{
 			"OnlineRacing",
-			"OnlineRacing/SportsCar",
 			"OnlineRacing/OffroadCar",
+			"OnlineRacing/SportsCar",
 			"OnlineRacing/Variant_OffRoad",
 			"OnlineRacing/Variant_TimeTrial",
 			"OnlineRacing/Variant_TimeTrial/UI"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
-
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-		// Uncomment if you are using online features
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
+		PrivateDependencyModuleNames.Add("Slate");
 	}
 }

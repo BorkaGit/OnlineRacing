@@ -5,15 +5,17 @@
 
 void UOnlineRacingUI::UpdateSpeed(float NewSpeed)
 {
-	// format the speed to KPH or MPH
-	float FormattedSpeed = FMath::Abs(NewSpeed) * (bIsMPH ? 0.022f : 0.036f);
+	float SpeedConversion = 0.036f;
+	if (bIsMPH)
+	{
+		SpeedConversion = 0.022f;
+	}
 
-	// call the Blueprint handler
+	const float FormattedSpeed = FMath::Abs(NewSpeed) * SpeedConversion;
 	OnSpeedUpdate(FormattedSpeed);
 }
 
 void UOnlineRacingUI::UpdateGear(int32 NewGear)
 {
-	// call the Blueprint handler
 	OnGearUpdate(NewGear);
 }
