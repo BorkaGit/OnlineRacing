@@ -8,11 +8,16 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/GameModeBase.h"
 #include "InputMappingContext.h"
+#include "TimerManager.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 #include "OnlineRacing.h"
 #include "OnlineRacingPawn.h"
 #include "OnlineRacingUI.h"
+#include "Race/OnlineRacingRaceGameMode.h"
+#include "Race/OnlineRacingRaceGameState.h"
+#include "UI/OnlineRacingDebugWidget.h"
+#include "UI/OnlineRacingRaceCountdownWidget.h"
 
 void AOnlineRacingPlayerController::BeginPlay()
 {
@@ -20,6 +25,14 @@ void AOnlineRacingPlayerController::BeginPlay()
 
 	bAttachToPawn = true;
 	CacheVehiclePawn();
+	BindRaceGameState();
+}
+
+void AOnlineRacingPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	GetWorldTimerManager().ClearTimer(RaceStartedDisplayTimer);
+	UnbindRaceGameState();
+	Super::EndPlay(EndPlayReason);
 }
 
 void AOnlineRacingPlayerController::SetupInputComponent()
@@ -84,25 +97,66 @@ void AOnlineRacingPlayerController::SetupInputComponent()
 			UE_LOG(LogOnlineRacing, Error, TEXT("[Client][PlayerController] Failed to create vehicle UI for %s."), *GetNameSafe(this));
 		}
 	}
+
+	if (IsValid(DebugWidgetClass.Get()) && !IsValid(DebugWidget))
+	{
+		DebugWidget = CreateWidget<UOnlineRacingDebugWidget>(this, DebugWidgetClass);
+		if (IsValid(DebugWidget))
+		{
+			DebugWidget->AddToPlayerScreen(10);
+		}
+		else
+		{
+			UE_LOG(LogOnlineRacing, Error, TEXT("[Client][PlayerController] Failed to create debug widget for %s."), *GetNameSafe(this));
+		}
+	}
+
+	if (IsValid(RaceCountdownWidgetClass.Get()) && !IsValid(RaceCountdownWidget))
+	{
+		RaceCountdownWidget = CreateWidget<UOnlineRacingRaceCountdownWidget>(this, RaceCountdownWidgetClass);
+		if (IsValid(RaceCountdownWidget))
+		{
+			RaceCountdownWidget->AddToPlayerScreen(20);
+			bRaceStartPresented = false;
+		}
+		else
+		{
+			UE_LOG(LogOnlineRacing, Error, TEXT("[Client][PlayerController] Failed to create race countdown widget for %s."), *GetNameSafe(this));
+		}
+	}
+
+	BindRaceGameState();
+	if (RaceGameState.IsValid())
+	{
+		HandleRacePhaseChanged(RaceGameState->GetRacePhase());
+	}
 }
 
 void AOnlineRacingPlayerController::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	BindRaceGameState();
+	UpdateRaceCountdown();
 
-	if (!IsValid(VehiclePawn) || !IsValid(VehicleUI))
+	if (!IsValid(VehiclePawn))
 	{
 		return;
 	}
 
-	const UChaosWheeledVehicleMovementComponent* const MovementComponent = VehiclePawn->GetChaosVehicleMovement();
-	if (!IsValid(MovementComponent))
+	if (IsValid(VehicleUI))
 	{
-		return;
+		const UChaosWheeledVehicleMovementComponent* const MovementComponent = VehiclePawn->GetChaosVehicleMovement();
+		if (IsValid(MovementComponent))
+		{
+			VehicleUI->UpdateSpeed(MovementComponent->GetForwardSpeed());
+			VehicleUI->UpdateGear(MovementComponent->GetCurrentGear());
+		}
 	}
 
-	VehicleUI->UpdateSpeed(MovementComponent->GetForwardSpeed());
-	VehicleUI->UpdateGear(MovementComponent->GetCurrentGear());
+	if (IsValid(DebugWidget))
+	{
+		DebugWidget->UpdateDebugData(*VehiclePawn);
+	}
 }
 
 void AOnlineRacingPlayerController::OnPossess(APawn* InPawn)
@@ -115,6 +169,183 @@ void AOnlineRacingPlayerController::OnRep_Pawn()
 {
 	Super::OnRep_Pawn();
 	CacheVehiclePawn();
+}
+
+void AOnlineRacingPlayerController::RequestVehicleRespawn()
+{
+	if (HasAuthority())
+	{
+		HandleVehicleRespawnRequest();
+		return;
+	}
+
+	Server_RequestVehicleRespawn();
+}
+
+void AOnlineRacingPlayerController::Server_RequestVehicleRespawn_Implementation()
+{
+	HandleVehicleRespawnRequest();
+}
+
+void AOnlineRacingPlayerController::HandleVehicleRespawnRequest()
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogOnlineRacing, Warning, TEXT("[Client][PlayerController] Rejected non-authoritative respawn handling for %s."), *GetNameSafe(this));
+		return;
+	}
+
+	if (!IsValid(VehiclePawn))
+	{
+		CacheVehiclePawn();
+	}
+
+	if (!IsValid(VehiclePawn))
+	{
+		UE_LOG(LogOnlineRacing, Warning, TEXT("[Server][PlayerController] Cannot respawn %s because it has no OnlineRacing vehicle."), *GetNameSafe(this));
+		return;
+	}
+
+	AOnlineRacingRaceGameMode* const RaceGameMode = GetWorld()->GetAuthGameMode<AOnlineRacingRaceGameMode>();
+	if (IsValid(RaceGameMode))
+	{
+		RaceGameMode->HandleRespawnRequest(*this);
+		return;
+	}
+
+	VehiclePawn->ResetVehicleAtCurrentLocation();
+}
+
+void AOnlineRacingPlayerController::BindRaceGameState()
+{
+	AOnlineRacingRaceGameState* const NewRaceGameState = GetWorld()->GetGameState<AOnlineRacingRaceGameState>();
+	if (RaceGameState == NewRaceGameState)
+	{
+		return;
+	}
+
+	UnbindRaceGameState();
+	RaceGameState = NewRaceGameState;
+	if (!RaceGameState.IsValid())
+	{
+		return;
+	}
+
+	RacePhaseChangedHandle = RaceGameState->OnRacePhaseChanged().AddUObject(this, &AOnlineRacingPlayerController::HandleRacePhaseChanged);
+	HandleRacePhaseChanged(RaceGameState->GetRacePhase());
+}
+
+void AOnlineRacingPlayerController::UnbindRaceGameState()
+{
+	if (RaceGameState.IsValid() && RacePhaseChangedHandle.IsValid())
+	{
+		RaceGameState->OnRacePhaseChanged().Remove(RacePhaseChangedHandle);
+	}
+
+	RacePhaseChangedHandle.Reset();
+	RaceGameState.Reset();
+}
+
+void AOnlineRacingPlayerController::HandleRacePhaseChanged(const EOnlineRacingRacePhase NewRacePhase)
+{
+	switch (NewRacePhase)
+	{
+	case EOnlineRacingRacePhase::Waiting:
+		bRaceStartPresented = false;
+		SetVehicleRaceInputEnabled(false);
+		HideCountdownWidget();
+		break;
+	case EOnlineRacingRacePhase::Countdown:
+		bRaceStartPresented = false;
+		SetVehicleRaceInputEnabled(false);
+		UpdateRaceCountdown();
+		break;
+	case EOnlineRacingRacePhase::Racing:
+		SetVehicleRaceInputEnabled(true);
+		PresentRaceStart();
+		break;
+	case EOnlineRacingRacePhase::Finished:
+		SetVehicleRaceInputEnabled(false);
+		HideCountdownWidget();
+		break;
+	default:
+		break;
+	}
+}
+
+void AOnlineRacingPlayerController::UpdateRaceCountdown()
+{
+	if (!RaceGameState.IsValid() || RaceGameState->GetRacePhase() != EOnlineRacingRacePhase::Countdown)
+	{
+		return;
+	}
+
+	const double TimeRemaining = RaceGameState->GetCountdownTimeRemaining();
+	if (TimeRemaining > 0.0)
+	{
+		if (IsValid(RaceCountdownWidget))
+		{
+			RaceCountdownWidget->ShowCountdown(TimeRemaining);
+		}
+		return;
+	}
+
+	SetVehicleRaceInputEnabled(true);
+	PresentRaceStart();
+}
+
+void AOnlineRacingPlayerController::PresentRaceStart()
+{
+	if (bRaceStartPresented)
+	{
+		return;
+	}
+
+	bRaceStartPresented = true;
+	if (!IsValid(RaceCountdownWidget))
+	{
+		return;
+	}
+
+	RaceCountdownWidget->ShowRaceStarted();
+	GetWorldTimerManager().SetTimer(
+		RaceStartedDisplayTimer,
+		this,
+		&AOnlineRacingPlayerController::HideCountdownWidget,
+		RaceStartedDisplayDuration,
+		false);
+}
+
+void AOnlineRacingPlayerController::HideCountdownWidget()
+{
+	if (IsValid(RaceCountdownWidget))
+	{
+		RaceCountdownWidget->HideCountdown();
+	}
+}
+
+void AOnlineRacingPlayerController::SetVehicleRaceInputEnabled(const bool bEnabled)
+{
+	if (IsValid(VehiclePawn))
+	{
+		VehiclePawn->SetRaceInputEnabled(bEnabled);
+	}
+}
+
+void AOnlineRacingPlayerController::ApplyRaceInputStateToVehicle()
+{
+	if (!IsValid(VehiclePawn) || !RaceGameState.IsValid())
+	{
+		return;
+	}
+
+	bool bEnableRaceInput = RaceGameState->GetRacePhase() == EOnlineRacingRacePhase::Racing;
+	if (RaceGameState->GetRacePhase() == EOnlineRacingRacePhase::Countdown && bRaceStartPresented)
+	{
+		bEnableRaceInput = true;
+	}
+
+	VehiclePawn->SetRaceInputEnabled(bEnableRaceInput);
 }
 
 void AOnlineRacingPlayerController::CacheVehiclePawn()
@@ -134,6 +365,7 @@ void AOnlineRacingPlayerController::CacheVehiclePawn()
 	if (IsValid(VehiclePawn))
 	{
 		VehiclePawn->OnDestroyed.AddUniqueDynamic(this, &AOnlineRacingPlayerController::OnPawnDestroyed);
+		ApplyRaceInputStateToVehicle();
 		return;
 	}
 

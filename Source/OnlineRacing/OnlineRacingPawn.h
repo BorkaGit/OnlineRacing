@@ -113,6 +113,9 @@ public:
 	UCameraComponent* GetBackCamera() const { return BackCamera.Get(); }
 	UChaosWheeledVehicleMovementComponent* GetChaosVehicleMovement() const { return ChaosVehicleMovement.Get(); }
 	UOnlineRacingVehicleTelemetryComponent* GetVehicleTelemetry() const { return VehicleTelemetry.Get(); }
+	void ResetVehicleAtCurrentLocation();
+	void RespawnVehicleAtTransform(const FTransform& RespawnTransform);
+	void SetRaceInputEnabled(bool bEnabled);
 
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Vehicle")
@@ -125,12 +128,13 @@ private:
 	void HandbrakeStopped(const FInputActionValue& Value);
 	void LookAround(const FInputActionValue& Value);
 	void ResetVehicle(const FInputActionValue& Value);
-	void ResetVehicleOnServer();
 	void Steering(const FInputActionValue& Value);
 	void Throttle(const FInputActionValue& Value);
 	void ToggleCamera(const FInputActionValue& Value);
 	void BrakeStarted(const FInputActionValue& Value);
 	void BrakeStopped(const FInputActionValue& Value);
+
+	bool bRaceInputEnabled = true;
 
 	UFUNCTION(Server, Reliable)
 	void Server_ResetVehicle();

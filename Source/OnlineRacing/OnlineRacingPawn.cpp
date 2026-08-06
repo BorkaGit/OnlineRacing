@@ -11,6 +11,7 @@
 #include "TimerManager.h"
 
 #include "OnlineRacing.h"
+#include "OnlineRacingPlayerController.h"
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 AOnlineRacingPawn::AOnlineRacingPawn()
@@ -165,42 +166,93 @@ void AOnlineRacingPawn::ResetVehicle(const FInputActionValue& Value)
 
 void AOnlineRacingPawn::DoSteering(const float SteeringValue)
 {
+	if (!bRaceInputEnabled)
+	{
+		return;
+	}
+
 	ChaosVehicleMovement->SetSteeringInput(SteeringValue);
 }
 
 void AOnlineRacingPawn::DoThrottle(const float ThrottleValue)
 {
+	if (!bRaceInputEnabled)
+	{
+		return;
+	}
+
 	ChaosVehicleMovement->SetThrottleInput(ThrottleValue);
 	ChaosVehicleMovement->SetBrakeInput(0.0f);
 }
 
 void AOnlineRacingPawn::DoBrake(const float BrakeValue)
 {
+	if (!bRaceInputEnabled)
+	{
+		return;
+	}
+
 	ChaosVehicleMovement->SetBrakeInput(BrakeValue);
 	ChaosVehicleMovement->SetThrottleInput(0.0f);
 }
 
 void AOnlineRacingPawn::DoBrakeStart()
 {
+	if (!bRaceInputEnabled)
+	{
+		return;
+	}
+
 	BrakeLights(true);
 }
 
 void AOnlineRacingPawn::DoBrakeStop()
 {
+	if (!bRaceInputEnabled)
+	{
+		return;
+	}
+
 	BrakeLights(false);
 	ChaosVehicleMovement->SetBrakeInput(0.0f);
 }
 
 void AOnlineRacingPawn::DoHandbrakeStart()
 {
+	if (!bRaceInputEnabled)
+	{
+		return;
+	}
+
 	ChaosVehicleMovement->SetHandbrakeInput(true);
 	BrakeLights(true);
 }
 
 void AOnlineRacingPawn::DoHandbrakeStop()
 {
+	if (!bRaceInputEnabled)
+	{
+		return;
+	}
+
 	ChaosVehicleMovement->SetHandbrakeInput(false);
 	BrakeLights(false);
+}
+
+void AOnlineRacingPawn::SetRaceInputEnabled(const bool bEnabled)
+{
+	bRaceInputEnabled = bEnabled;
+
+	ChaosVehicleMovement->SetSteeringInput(0.f);
+	ChaosVehicleMovement->SetThrottleInput(0.f);
+	ChaosVehicleMovement->SetBrakeInput(0.f);
+	ChaosVehicleMovement->SetHandbrakeInput(false);
+
+	if (!bRaceInputEnabled)
+	{
+		ChaosVehicleMovement->SetBrakeInput(1.f);
+		ChaosVehicleMovement->SetHandbrakeInput(true);
+	}
 }
 
 void AOnlineRacingPawn::DoLookAround(const float YawDelta)
@@ -217,21 +269,28 @@ void AOnlineRacingPawn::DoToggleCamera()
 
 void AOnlineRacingPawn::DoResetVehicle()
 {
+	AOnlineRacingPlayerController* const OnlineRacingPlayerController = Cast<AOnlineRacingPlayerController>(GetController());
+	if (IsValid(OnlineRacingPlayerController))
+	{
+		OnlineRacingPlayerController->RequestVehicleRespawn();
+		return;
+	}
+
 	if (!HasAuthority())
 	{
 		Server_ResetVehicle();
 		return;
 	}
 
-	ResetVehicleOnServer();
+	ResetVehicleAtCurrentLocation();
 }
 
 void AOnlineRacingPawn::Server_ResetVehicle_Implementation()
 {
-	ResetVehicleOnServer();
+	ResetVehicleAtCurrentLocation();
 }
 
-void AOnlineRacingPawn::ResetVehicleOnServer()
+void AOnlineRacingPawn::ResetVehicleAtCurrentLocation()
 {
 	if (!HasAuthority())
 	{
@@ -244,10 +303,35 @@ void AOnlineRacingPawn::ResetVehicleOnServer()
 	ResetRotation.Pitch = 0.0f;
 	ResetRotation.Roll = 0.0f;
 
-	SetActorTransform(FTransform(ResetRotation, ResetLocation), false, nullptr, ETeleportType::TeleportPhysics);
-	GetMesh()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-	GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector);
+	RespawnVehicleAtTransform(FTransform(ResetRotation, ResetLocation));
+}
+
+void AOnlineRacingPawn::RespawnVehicleAtTransform(const FTransform& RespawnTransform)
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogOnlineRacing, Warning, TEXT("[Client][VehiclePawn] Rejected non-authoritative respawn transform for %s."), *GetNameSafe(this));
+		return;
+	}
+
+	if (RespawnTransform.ContainsNaN())
+	{
+		UE_LOG(LogOnlineRacing, Error, TEXT("[Server][VehiclePawn] Rejected invalid respawn transform for %s."), *GetNameSafe(this));
+		return;
+	}
+
 	ChaosVehicleMovement->ResetVehicleState();
+	SetActorLocationAndRotation(
+		RespawnTransform.GetLocation(),
+		RespawnTransform.Rotator(),
+		false,
+		nullptr,
+		ETeleportType::TeleportPhysics);
+	GetMesh()->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	GetMesh()->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+	GetMesh()->WakeAllRigidBodies();
+	SetRaceInputEnabled(bRaceInputEnabled);
+	ForceNetUpdate();
 }
 
 void AOnlineRacingPawn::FlippedCheck()
@@ -266,7 +350,16 @@ void AOnlineRacingPawn::FlippedCheck()
 
 	if (bPreviousFlipCheck)
 	{
-		ResetVehicleOnServer();
+		AOnlineRacingPlayerController* const OnlineRacingPlayerController = Cast<AOnlineRacingPlayerController>(GetController());
+		if (IsValid(OnlineRacingPlayerController))
+		{
+			OnlineRacingPlayerController->RequestVehicleRespawn();
+		}
+		else
+		{
+			ResetVehicleAtCurrentLocation();
+		}
+
 		bPreviousFlipCheck = false;
 		return;
 	}
