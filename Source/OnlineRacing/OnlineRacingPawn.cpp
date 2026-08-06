@@ -11,6 +11,7 @@
 #include "TimerManager.h"
 
 #include "OnlineRacing.h"
+#include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 AOnlineRacingPawn::AOnlineRacingPawn()
 {
@@ -44,6 +45,8 @@ AOnlineRacingPawn::AOnlineRacingPawn()
 	GetMesh()->SetCollisionProfileName(TEXT("Vehicle"));
 
 	ChaosVehicleMovement = CastChecked<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement());
+
+	VehicleTelemetry = CreateDefaultSubobject<UOnlineRacingVehicleTelemetryComponent>(TEXT("Vehicle Telemetry"));
 }
 
 void AOnlineRacingPawn::BeginPlay()

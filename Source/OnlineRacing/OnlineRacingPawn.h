@@ -10,6 +10,7 @@ class UCameraComponent;
 class UChaosWheeledVehicleMovementComponent;
 class UInputAction;
 class USpringArmComponent;
+class UOnlineRacingVehicleTelemetryComponent;
 struct FInputActionValue;
 
 UCLASS(Abstract)
@@ -29,6 +30,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> BackCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UOnlineRacingVehicleTelemetryComponent> VehicleTelemetry;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UChaosWheeledVehicleMovementComponent> ChaosVehicleMovement;
@@ -108,6 +112,7 @@ public:
 	USpringArmComponent* GetBackSpringArm() const { return BackSpringArm.Get(); }
 	UCameraComponent* GetBackCamera() const { return BackCamera.Get(); }
 	UChaosWheeledVehicleMovementComponent* GetChaosVehicleMovement() const { return ChaosVehicleMovement.Get(); }
+	UOnlineRacingVehicleTelemetryComponent* GetVehicleTelemetry() const { return VehicleTelemetry.Get(); }
 
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Vehicle")
