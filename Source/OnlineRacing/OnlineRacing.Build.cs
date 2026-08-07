@@ -10,6 +10,7 @@ public class OnlineRacing : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
+			"AIModule",
 			"ChaosVehicles",
 			"Core",
 			"CoreUObject",
