@@ -15,7 +15,9 @@ The project currently has a playable race foundation:
 - vehicle input locking until the race starts;
 - ordered checkpoints and lap progression validated by the server;
 - server-authoritative respawn at the last confirmed checkpoint;
-- replicated per-player race progress stored in `PlayerState`;
+- authoritative finish times and positions assigned in crossing order;
+- replicated per-player race progress and finish data stored in `PlayerState`;
+- a replicated results snapshot stored in `GameState`;
 - vehicle telemetry for speed, RPM, gear, inputs, wheel contact, slip, and skid;
 - a debug HUD with telemetry, race state, network roles, net mode, and ping;
 - PIE listen-server gameplay with multiple players.
@@ -24,7 +26,7 @@ The original Vehicle Template time-trial variant remains in the repository as re
 
 ## Not implemented yet
 
-- finish timestamps, finish order, and a results table;
+- final Widget Blueprint styling and PIE validation for the results table;
 - Online Subsystem Null session creation, discovery, join, leave, and travel;
 - Steam lobbies and friend invitations;
 - production vehicle audio;
@@ -38,12 +40,13 @@ The original Vehicle Template time-trial variant remains in the repository as re
 | --- | --- |
 | `AOnlineRacingPawn` | Owns the Chaos vehicle, cameras, local vehicle input, input locking, and authoritative teleport/reset operations. |
 | `UOnlineRacingVehicleTelemetryComponent` | Reads post-physics Chaos state and exposes a stable game-thread telemetry snapshot. It does not own race rules. |
-| `AOnlineRacingRaceGameMode` | Owns server-only race orchestration, checkpoint validation, lap progression, countdown start, finish detection, and respawn selection. |
-| `AOnlineRacingRaceGameState` | Replicates public race phase, synchronized countdown end time, lap count, and checkpoint count. |
-| `AOnlineRacingRacePlayerState` | Replicates per-player lap, expected checkpoint, last confirmed checkpoint, and finished state. |
+| `AOnlineRacingRaceGameMode` | Owns server-only race orchestration, checkpoint validation, lap progression, countdown start, finish timing and ordering, and respawn selection. |
+| `AOnlineRacingRaceGameState` | Replicates public race phase, synchronized timing, race configuration, and the ordered results snapshot. |
+| `AOnlineRacingRacePlayerState` | Replicates per-player lap, expected checkpoint, last confirmed checkpoint, finish position, and finish time. |
 | `AOnlineRacingRaceCheckpoint` | Defines an ordered overlap volume and a respawn transform; reports vehicle crossings to server race logic. |
 | `AOnlineRacingPlayerController` | Coordinates local UI and input state and sends respawn requests to the server. |
 | `UOnlineRacingRaceCountdownWidget` | Presents countdown values and `GO`; it never starts or advances the race. |
+| `UOnlineRacingRaceResultsWidget` | Presents replicated finish positions and times; Blueprint may replace the fallback text with styled rows. |
 | `UOnlineRacingDebugWidget` | Presents telemetry and replicated networking/race state for development. |
 
 ### Authority model
@@ -51,6 +54,7 @@ The original Vehicle Template time-trial variant remains in the repository as re
 - `GameMode` exists only on the server and is the source of truth for race progression.
 - Clients cannot submit lap counts, checkpoint indices, finish state, or respawn transforms.
 - A checkpoint crossing is accepted only during the `Racing` phase and only when its index matches the player's expected checkpoint.
+- Finish time is calculated from synchronized server timestamps; the server assigns each finishing position exactly once.
 - The server selects the respawn transform from the player's last validated checkpoint.
 - Shared race state is replicated through `GameState`; persistent player progress is replicated through `PlayerState`.
 - UI reads state and sends requests but never decides gameplay outcomes.
@@ -63,6 +67,7 @@ Map BeginPlay
     -> initialize GameState and PlayerStates
     -> Countdown (server end timestamp is replicated)
     -> Racing (vehicle input enabled, checkpoints accepted)
+        -> record each racer's server finish time and position
     -> Finished (after all active racers finish)
 ```
 
@@ -123,19 +128,21 @@ Expected behavior:
 3. Checkpoints crossed before `Racing` are ignored.
 4. Checkpoint `0` acts as the start/finish line; after spawning, racers must cross `1`, continue in contiguous index order, and return to `0` to complete a lap.
 5. Reset respawns the vehicle at its last server-confirmed checkpoint.
-6. The debug HUD shows the local race state, progress, telemetry, roles, and ping.
+6. A finished racer's driving input is disabled while the remaining racers continue.
+7. After all racers finish, every client receives the same ordered results table.
+8. The debug HUD shows the local race state, progress, finish data, telemetry, roles, and ping.
 
 For meaningful network testing, use separate server/client worlds and PIE network emulation. Split-screen alone is not sufficient validation.
 
 ## Roadmap
 
-1. **Complete race results** - record authoritative finish times, assign positions, replicate results, and display the final table.
-2. **Validate local multiplayer** - test 2-4 players, late joins, disconnects, listen-server behavior, and Chaos movement under simulated latency.
-3. **Online Subsystem Null** - implement session create/find/join/leave and listen-server travel in a project subsystem.
-4. **Steam** - switch the same session flow to Steam lobbies and add friend invitations.
-5. **Vehicle audio** - build the RPM/load engine model, gear shifts, skid, impacts, surfaces, wind, and audio debugging.
-6. **Polish and profile** - use network emulation, Unreal Insights, stat commands, failure handling, and packaged-build tests.
-7. **Portfolio delivery** - add architecture diagrams, screenshots, known limitations, and a short demonstration video.
+1. **Finish results presentation** - create and style `WBP_RaceResults`, then validate server/client finish order in PIE.
+2. **AI opponent** - add one server-controlled Chaos vehicle that follows a racing spline and uses the same checkpoints, respawn, and results flow.
+3. **Validate local multiplayer** - test 2-4 players, late joins, disconnects, listen-server behavior, and Chaos movement under simulated latency.
+4. **Online Subsystem Null** - implement session create/find/join/leave and listen-server travel in a project subsystem.
+5. **Steam** - switch the same session flow to Steam lobbies and add friend invitations.
+6. **Vehicle audio** - build the RPM/load engine model, gear shifts, skid, impacts, surfaces, wind, and audio debugging.
+7. **Polish and portfolio delivery** - profile, test a packaged build, document known limitations, and record a short demonstration video.
 
 ## Scope boundaries
 

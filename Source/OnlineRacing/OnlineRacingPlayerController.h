@@ -8,12 +8,15 @@
 
 class AOnlineRacingPawn;
 class AOnlineRacingRaceGameState;
+class AOnlineRacingRacePlayerState;
 class UInputMappingContext;
 class UOnlineRacingDebugWidget;
 class UOnlineRacingRaceCountdownWidget;
+class UOnlineRacingRaceResultsWidget;
 class UOnlineRacingUI;
 class UUserWidget;
 enum class EOnlineRacingRacePhase : uint8;
+struct FOnlineRacingRaceResult;
 
 UCLASS(Abstract, Config = "Game")
 class AOnlineRacingPlayerController : public APlayerController
@@ -63,6 +66,12 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UOnlineRacingRaceCountdownWidget> RaceCountdownWidget;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Race|UI")
+	TSubclassOf<UOnlineRacingRaceResultsWidget> RaceResultsWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UOnlineRacingRaceResultsWidget> RaceResultsWidget;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Race|UI", meta = (ClampMin = "0.0", Units = "s"))
 	float RaceStartedDisplayDuration = 1.f;
 
@@ -75,6 +84,7 @@ protected:
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnRep_Pawn() override;
+	virtual void OnRep_PlayerState() override;
 	virtual void SetupInputComponent() override;
 
 private:
@@ -86,18 +96,28 @@ private:
 
 	void ApplyRaceInputStateToVehicle();
 	void BindRaceGameState();
+	void BindRacePlayerState();
 	void CacheVehiclePawn();
+	void HandlePlayerFinishedChanged(bool bFinished);
 	void HandleRacePhaseChanged(EOnlineRacingRacePhase NewRacePhase);
+	void HandleRaceResultsChanged(const TArray<FOnlineRacingRaceResult>& RaceResults);
 	void HandleVehicleRespawnRequest();
 	void HideCountdownWidget();
+	void HideRaceResults();
 	void PresentRaceStart();
+	void SetDebugWidgetVisible(bool bVisible);
+	void ShowRaceResults();
 	void SetVehicleRaceInputEnabled(bool bEnabled);
 	bool ShouldUseTouchControls() const;
 	void UnbindRaceGameState();
+	void UnbindRacePlayerState();
 	void UpdateRaceCountdown();
 
 	TWeakObjectPtr<AOnlineRacingRaceGameState> RaceGameState;
+	TWeakObjectPtr<AOnlineRacingRacePlayerState> RacePlayerState;
 	FDelegateHandle RacePhaseChangedHandle;
+	FDelegateHandle RaceFinishedChangedHandle;
+	FDelegateHandle RaceResultsChangedHandle;
 	FTimerHandle RaceStartedDisplayTimer;
 	bool bRaceStartPresented = false;
 };

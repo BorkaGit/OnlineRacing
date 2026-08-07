@@ -35,6 +35,7 @@ void AOnlineRacingRaceGameMode::BeginPlay()
 	}
 
 	RaceGameState->InitializeRace(TotalLaps, RaceCheckpoints.Num());
+	NextFinishPosition = 1;
 	for (APlayerState* const PlayerState : RaceGameState->PlayerArray)
 	{
 		AOnlineRacingRacePlayerState* const RacePlayerState = Cast<AOnlineRacingRacePlayerState>(PlayerState);
@@ -115,7 +116,11 @@ void AOnlineRacingRaceGameMode::HandleCheckpointReached(
 		}
 	}
 
-	RacePlayerState->SetRaceProgress(CurrentLap, CheckpointIndex, NextCheckpointIndex, bFinished);
+	RacePlayerState->SetRaceProgress(CurrentLap, CheckpointIndex, NextCheckpointIndex);
+	if (bFinished)
+	{
+		RecordPlayerFinish(*RacePlayerState);
+	}
 
 	if (!bFinished || !AreAllPlayersFinished())
 	{
@@ -191,7 +196,8 @@ void AOnlineRacingRaceGameMode::StartRace()
 		return;
 	}
 
-	RaceGameState->SetRacePhase(EOnlineRacingRacePhase::Racing);
+	const double RaceStartServerTime = RaceGameState->GetServerWorldTimeSeconds();
+	RaceGameState->StartRace(RaceStartServerTime);
 	UE_LOG(LogOnlineRacing, Display, TEXT("[Server][Race] Countdown completed; race started."));
 }
 
@@ -251,6 +257,42 @@ bool AOnlineRacingRaceGameMode::DiscoverRaceCheckpoints()
 void AOnlineRacingRaceGameMode::InitializePlayerState(AOnlineRacingRacePlayerState& RacePlayerState) const
 {
 	RacePlayerState.InitializeRaceProgress(1);
+}
+
+void AOnlineRacingRaceGameMode::RecordPlayerFinish(AOnlineRacingRacePlayerState& RacePlayerState)
+{
+	AOnlineRacingRaceGameState* const RaceGameState = GetGameState<AOnlineRacingRaceGameState>();
+	if (!IsValid(RaceGameState))
+	{
+		UE_LOG(LogOnlineRacing, Error, TEXT("[Server][Race] Cannot record finish because RaceGameState is unavailable."));
+		return;
+	}
+
+	const double FinishTimeSeconds = FMath::Max(
+		RaceGameState->GetServerWorldTimeSeconds() - RaceGameState->GetRaceStartServerTime(),
+		0.0);
+	const int32 FinishPosition = NextFinishPosition;
+	++NextFinishPosition;
+
+	RacePlayerState.FinishRace(FinishPosition, FinishTimeSeconds);
+
+	FOnlineRacingRaceResult RaceResult;
+	RaceResult.Position = FinishPosition;
+	RaceResult.PlayerName = RacePlayerState.GetPlayerName();
+	if (RaceResult.PlayerName.IsEmpty())
+	{
+		RaceResult.PlayerName = FString::Printf(TEXT("Racer %d"), FinishPosition);
+	}
+	RaceResult.FinishTimeSeconds = FinishTimeSeconds;
+	RaceGameState->AddRaceResult(RaceResult);
+
+	UE_LOG(
+		LogOnlineRacing,
+		Display,
+		TEXT("[Server][Race] %s finished in position %d with time %.3f s."),
+		*GetNameSafe(&RacePlayerState),
+		FinishPosition,
+		FinishTimeSeconds);
 }
 
 bool AOnlineRacingRaceGameMode::AreAllPlayersFinished() const

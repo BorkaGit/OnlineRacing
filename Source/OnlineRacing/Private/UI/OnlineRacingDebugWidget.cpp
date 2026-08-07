@@ -69,7 +69,8 @@ void UOnlineRacingDebugWidget::UpdateDebugData(const AOnlineRacingPawn& VehicleP
 			TEXT("Race phase: %s\n")
 			TEXT("Countdown remaining: %.2f s\n")
 			TEXT("Lap: %d/%d  Next checkpoint: %d/%d\n")
-			TEXT("Last checkpoint: %d  Finished: %s"),
+			TEXT("Last checkpoint: %d  Finished: %s\n")
+			TEXT("Finish position: %d  Time: %.3f s"),
 			*UEnum::GetValueAsString(RaceGameState->GetRacePhase()),
 			RaceGameState->GetCountdownTimeRemaining(),
 			RacePlayerState->GetCurrentLap(),
@@ -77,7 +78,9 @@ void UOnlineRacingDebugWidget::UpdateDebugData(const AOnlineRacingPawn& VehicleP
 			RacePlayerState->GetNextCheckpointIndex(),
 			RaceGameState->GetCheckpointCount() - 1,
 			RacePlayerState->GetLastCheckpointIndex(),
-			GetBooleanText(RacePlayerState->HasFinishedRace()));
+			GetBooleanText(RacePlayerState->HasFinishedRace()),
+			RacePlayerState->GetFinishPosition(),
+			RacePlayerState->GetFinishTimeSeconds());
 	}
 
 	const FString DebugString = FString::Printf(

@@ -16,8 +16,10 @@
 #include "OnlineRacingUI.h"
 #include "Race/OnlineRacingRaceGameMode.h"
 #include "Race/OnlineRacingRaceGameState.h"
+#include "Race/OnlineRacingRacePlayerState.h"
 #include "UI/OnlineRacingDebugWidget.h"
 #include "UI/OnlineRacingRaceCountdownWidget.h"
+#include "UI/OnlineRacingRaceResultsWidget.h"
 
 void AOnlineRacingPlayerController::BeginPlay()
 {
@@ -26,12 +28,14 @@ void AOnlineRacingPlayerController::BeginPlay()
 	bAttachToPawn = true;
 	CacheVehiclePawn();
 	BindRaceGameState();
+	BindRacePlayerState();
 }
 
 void AOnlineRacingPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(RaceStartedDisplayTimer);
 	UnbindRaceGameState();
+	UnbindRacePlayerState();
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -125,6 +129,19 @@ void AOnlineRacingPlayerController::SetupInputComponent()
 		}
 	}
 
+	if (IsValid(RaceResultsWidgetClass.Get()) && !IsValid(RaceResultsWidget))
+	{
+		RaceResultsWidget = CreateWidget<UOnlineRacingRaceResultsWidget>(this, RaceResultsWidgetClass);
+		if (IsValid(RaceResultsWidget))
+		{
+			RaceResultsWidget->AddToPlayerScreen(30);
+		}
+		else
+		{
+			UE_LOG(LogOnlineRacing, Error, TEXT("[Client][PlayerController] Failed to create race results widget for %s."), *GetNameSafe(this));
+		}
+	}
+
 	BindRaceGameState();
 	if (RaceGameState.IsValid())
 	{
@@ -162,6 +179,7 @@ void AOnlineRacingPlayerController::Tick(const float DeltaSeconds)
 void AOnlineRacingPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	BindRacePlayerState();
 	CacheVehiclePawn();
 }
 
@@ -169,6 +187,12 @@ void AOnlineRacingPlayerController::OnRep_Pawn()
 {
 	Super::OnRep_Pawn();
 	CacheVehiclePawn();
+}
+
+void AOnlineRacingPlayerController::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	BindRacePlayerState();
 }
 
 void AOnlineRacingPlayerController::RequestVehicleRespawn()
@@ -232,6 +256,7 @@ void AOnlineRacingPlayerController::BindRaceGameState()
 	}
 
 	RacePhaseChangedHandle = RaceGameState->OnRacePhaseChanged().AddUObject(this, &AOnlineRacingPlayerController::HandleRacePhaseChanged);
+	RaceResultsChangedHandle = RaceGameState->OnRaceResultsChanged().AddUObject(this, &AOnlineRacingPlayerController::HandleRaceResultsChanged);
 	HandleRacePhaseChanged(RaceGameState->GetRacePhase());
 }
 
@@ -241,9 +266,46 @@ void AOnlineRacingPlayerController::UnbindRaceGameState()
 	{
 		RaceGameState->OnRacePhaseChanged().Remove(RacePhaseChangedHandle);
 	}
+	if (RaceGameState.IsValid() && RaceResultsChangedHandle.IsValid())
+	{
+		RaceGameState->OnRaceResultsChanged().Remove(RaceResultsChangedHandle);
+	}
 
 	RacePhaseChangedHandle.Reset();
+	RaceResultsChangedHandle.Reset();
 	RaceGameState.Reset();
+}
+
+void AOnlineRacingPlayerController::BindRacePlayerState()
+{
+	AOnlineRacingRacePlayerState* const NewRacePlayerState = GetPlayerState<AOnlineRacingRacePlayerState>();
+	if (RacePlayerState == NewRacePlayerState)
+	{
+		return;
+	}
+
+	UnbindRacePlayerState();
+	RacePlayerState = NewRacePlayerState;
+	if (!RacePlayerState.IsValid())
+	{
+		return;
+	}
+
+	RaceFinishedChangedHandle = RacePlayerState->OnRaceFinishedChanged().AddUObject(
+		this,
+		&AOnlineRacingPlayerController::HandlePlayerFinishedChanged);
+	HandlePlayerFinishedChanged(RacePlayerState->HasFinishedRace());
+}
+
+void AOnlineRacingPlayerController::UnbindRacePlayerState()
+{
+	if (RacePlayerState.IsValid() && RaceFinishedChangedHandle.IsValid())
+	{
+		RacePlayerState->OnRaceFinishedChanged().Remove(RaceFinishedChangedHandle);
+	}
+
+	RaceFinishedChangedHandle.Reset();
+	RacePlayerState.Reset();
 }
 
 void AOnlineRacingPlayerController::HandleRacePhaseChanged(const EOnlineRacingRacePhase NewRacePhase)
@@ -253,24 +315,53 @@ void AOnlineRacingPlayerController::HandleRacePhaseChanged(const EOnlineRacingRa
 	case EOnlineRacingRacePhase::Waiting:
 		bRaceStartPresented = false;
 		SetVehicleRaceInputEnabled(false);
+		SetDebugWidgetVisible(true);
 		HideCountdownWidget();
+		HideRaceResults();
 		break;
 	case EOnlineRacingRacePhase::Countdown:
 		bRaceStartPresented = false;
 		SetVehicleRaceInputEnabled(false);
+		SetDebugWidgetVisible(true);
+		HideRaceResults();
 		UpdateRaceCountdown();
 		break;
 	case EOnlineRacingRacePhase::Racing:
-		SetVehicleRaceInputEnabled(true);
+		ApplyRaceInputStateToVehicle();
+		SetDebugWidgetVisible(true);
+		HideRaceResults();
 		PresentRaceStart();
 		break;
 	case EOnlineRacingRacePhase::Finished:
 		SetVehicleRaceInputEnabled(false);
+		SetDebugWidgetVisible(false);
 		HideCountdownWidget();
+		ShowRaceResults();
 		break;
 	default:
 		break;
 	}
+}
+
+void AOnlineRacingPlayerController::HandleRaceResultsChanged(const TArray<FOnlineRacingRaceResult>&)
+{
+	if (!RaceGameState.IsValid() || RaceGameState->GetRacePhase() != EOnlineRacingRacePhase::Finished)
+	{
+		return;
+	}
+
+	ShowRaceResults();
+}
+
+void AOnlineRacingPlayerController::HandlePlayerFinishedChanged(const bool bFinished)
+{
+	if (bFinished)
+	{
+		SetVehicleRaceInputEnabled(false);
+		return;
+	}
+
+	ApplyRaceInputStateToVehicle();
 }
 
 void AOnlineRacingPlayerController::UpdateRaceCountdown()
@@ -324,6 +415,38 @@ void AOnlineRacingPlayerController::HideCountdownWidget()
 	}
 }
 
+void AOnlineRacingPlayerController::HideRaceResults()
+{
+	if (IsValid(RaceResultsWidget))
+	{
+		RaceResultsWidget->HideResults();
+	}
+}
+
+void AOnlineRacingPlayerController::SetDebugWidgetVisible(const bool bVisible)
+{
+	if (!IsValid(DebugWidget))
+	{
+		return;
+	}
+
+	if (bVisible)
+	{
+		DebugWidget->SetVisibility(ESlateVisibility::Visible);
+		return;
+	}
+
+	DebugWidget->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void AOnlineRacingPlayerController::ShowRaceResults()
+{
+	if (IsValid(RaceResultsWidget) && RaceGameState.IsValid())
+	{
+		RaceResultsWidget->ShowResults(RaceGameState->GetRaceResults());
+	}
+}
+
 void AOnlineRacingPlayerController::SetVehicleRaceInputEnabled(const bool bEnabled)
 {
 	if (IsValid(VehiclePawn))
@@ -336,6 +459,12 @@ void AOnlineRacingPlayerController::ApplyRaceInputStateToVehicle()
 {
 	if (!IsValid(VehiclePawn) || !RaceGameState.IsValid())
 	{
+		return;
+	}
+
+	if (RacePlayerState.IsValid() && RacePlayerState->HasFinishedRace())
+	{
+		VehiclePawn->SetRaceInputEnabled(false);
 		return;
 	}
 

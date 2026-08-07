@@ -36,10 +36,12 @@ private:
 
 	bool bCheckpointConfigurationValid = false;
 	FTimerHandle CountdownTimer;
+	int32 NextFinishPosition = 1;
 
 	bool AreAllPlayersFinished() const;
 	void BeginCountdown();
 	bool DiscoverRaceCheckpoints();
 	void InitializePlayerState(AOnlineRacingRacePlayerState& RacePlayerState) const;
+	void RecordPlayerFinish(AOnlineRacingRacePlayerState& RacePlayerState);
 	void StartRace();
 };
