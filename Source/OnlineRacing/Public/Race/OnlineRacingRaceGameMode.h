@@ -18,7 +18,7 @@ public:
 	AOnlineRacingRaceGameMode();
 
 	void HandleCheckpointReached(const AOnlineRacingRaceCheckpoint& Checkpoint, const AOnlineRacingPawn& VehiclePawn);
-	void HandleRespawnRequest(AController& Controller);
+	bool HandleRespawnRequest(AController& Controller);
 
 protected:
 	virtual void BeginPlay() override;

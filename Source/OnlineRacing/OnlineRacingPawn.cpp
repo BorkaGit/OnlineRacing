@@ -12,6 +12,7 @@
 
 #include "OnlineRacing.h"
 #include "OnlineRacingPlayerController.h"
+#include "Race/OnlineRacingRaceGameMode.h"
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 AOnlineRacingPawn::AOnlineRacingPawn()
@@ -341,6 +342,12 @@ void AOnlineRacingPawn::FlippedCheck()
 		return;
 	}
 
+	const UWorld* CurrentWorld = GetWorld();
+	if (!IsValid(CurrentWorld))
+	{
+		return;
+	}
+
 	const float UpDot = FVector::DotProduct(FVector::UpVector, GetMesh()->GetUpVector());
 	if (UpDot >= FlipCheckMinDot)
 	{
@@ -350,10 +357,13 @@ void AOnlineRacingPawn::FlippedCheck()
 
 	if (bPreviousFlipCheck)
 	{
-		AOnlineRacingPlayerController* const OnlineRacingPlayerController = Cast<AOnlineRacingPlayerController>(GetController());
-		if (IsValid(OnlineRacingPlayerController))
+		AController* const VehicleController = GetController();
+		
+		AOnlineRacingRaceGameMode* const RaceGameMode = CurrentWorld->GetAuthGameMode<AOnlineRacingRaceGameMode>();
+		
+		if (IsValid(VehicleController) && IsValid(RaceGameMode))
 		{
-			OnlineRacingPlayerController->RequestVehicleRespawn();
+			RaceGameMode->HandleRespawnRequest(*VehicleController);
 		}
 		else
 		{

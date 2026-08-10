@@ -133,11 +133,11 @@ void AOnlineRacingRaceGameMode::HandleCheckpointReached(
 	}
 }
 
-void AOnlineRacingRaceGameMode::HandleRespawnRequest(AController& Controller)
+bool AOnlineRacingRaceGameMode::HandleRespawnRequest(AController& Controller)
 {
 	if (!HasAuthority() || !bCheckpointConfigurationValid)
 	{
-		return;
+		return false;
 	}
 
 	const AOnlineRacingRacePlayerState* const RacePlayerState = Controller.GetPlayerState<AOnlineRacingRacePlayerState>();
@@ -145,20 +145,22 @@ void AOnlineRacingRaceGameMode::HandleRespawnRequest(AController& Controller)
 	if (!IsValid(RacePlayerState) || !IsValid(VehiclePawn))
 	{
 		UE_LOG(LogOnlineRacing, Warning, TEXT("[Server][Race] Rejected respawn for %s because its race state or vehicle is unavailable."), *GetNameSafe(&Controller));
-		return;
+		return false;
 	}
 
 	const int32 CheckpointIndex = RacePlayerState->GetLastCheckpointIndex();
 	if (!RaceCheckpoints.IsValidIndex(CheckpointIndex) || !IsValid(RaceCheckpoints[CheckpointIndex]))
 	{
 		UE_LOG(LogOnlineRacing, Warning, TEXT("[Server][Race] Rejected respawn for %s because checkpoint index %d is invalid."), *GetNameSafe(&Controller), CheckpointIndex);
-		return;
+		return false;
 	}
 
 	const AOnlineRacingRaceCheckpoint* const Checkpoint = RaceCheckpoints[CheckpointIndex];
 	VehiclePawn->RespawnVehicleAtTransform(Checkpoint->GetRespawnTransform());
 
 	UE_LOG(LogOnlineRacing, Display, TEXT("[Server][Race] Respawned %s at checkpoint %d."), *GetNameSafe(VehiclePawn), CheckpointIndex);
+	
+	return true;
 }
 
 void AOnlineRacingRaceGameMode::BeginCountdown()
