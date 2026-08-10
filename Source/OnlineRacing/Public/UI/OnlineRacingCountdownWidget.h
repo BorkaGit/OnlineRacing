@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Blueprint/UserWidget.h"
-#include "OnlineRacingRaceCountdownWidget.generated.h"
+#include "OnlineRacingCountdownWidget.generated.h"
 
 class UTextBlock;
 
 UCLASS(Abstract)
-class ONLINERACING_API UOnlineRacingRaceCountdownWidget : public UUserWidget
+class ONLINERACING_API UOnlineRacingCountdownWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

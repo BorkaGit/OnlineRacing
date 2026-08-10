@@ -12,7 +12,7 @@
 
 #include "OnlineRacing.h"
 #include "OnlineRacingPlayerController.h"
-#include "Race/OnlineRacingRaceGameMode.h"
+#include "Race/OnlineRacingMatchGameMode.h"
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 AOnlineRacingPawn::AOnlineRacingPawn()
@@ -359,7 +359,7 @@ void AOnlineRacingPawn::FlippedCheck()
 	{
 		AController* const VehicleController = GetController();
 		
-		AOnlineRacingRaceGameMode* const RaceGameMode = CurrentWorld->GetAuthGameMode<AOnlineRacingRaceGameMode>();
+		AOnlineRacingMatchGameMode* const RaceGameMode = CurrentWorld->GetAuthGameMode<AOnlineRacingMatchGameMode>();
 		
 		if (IsValid(VehicleController) && IsValid(RaceGameMode))
 		{

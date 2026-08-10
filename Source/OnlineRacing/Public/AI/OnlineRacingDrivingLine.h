@@ -3,20 +3,20 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
-#include "OnlineRacingRacingLine.generated.h"
+#include "OnlineRacingDrivingLine.generated.h"
 
 class USplineComponent;
 
 UCLASS()
-class ONLINERACING_API AOnlineRacingRacingLine : public AActor
+class ONLINERACING_API AOnlineRacingDrivingLine : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
-	AOnlineRacingRacingLine();
-	
+
+public:
+	AOnlineRacingDrivingLine();
+
 	FORCEINLINE USplineComponent* GetSplineComponent() const { return SplineComponent; }
-	
+
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USplineComponent> SplineComponent;

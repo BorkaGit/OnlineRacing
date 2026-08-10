@@ -1,12 +1,12 @@
 #pragma once
 
 #include "GameFramework/PlayerState.h"
-#include "OnlineRacingRacePlayerState.generated.h"
+#include "OnlineRacingMatchPlayerState.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnlineRacingPlayerFinishedChanged, bool);
 
 UCLASS()
-class ONLINERACING_API AOnlineRacingRacePlayerState : public APlayerState
+class ONLINERACING_API AOnlineRacingMatchPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
@@ -41,7 +41,7 @@ protected:
 	double FinishTimeSeconds = 0.0;
 
 private:
-	friend class AOnlineRacingRaceGameMode;
+	friend class AOnlineRacingMatchGameMode;
 
 	FOnlineRacingPlayerFinishedChanged RaceFinishedChanged;
 

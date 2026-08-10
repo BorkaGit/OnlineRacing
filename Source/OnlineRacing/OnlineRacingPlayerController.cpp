@@ -14,12 +14,12 @@
 #include "OnlineRacing.h"
 #include "OnlineRacingPawn.h"
 #include "OnlineRacingUI.h"
-#include "Race/OnlineRacingRaceGameMode.h"
-#include "Race/OnlineRacingRaceGameState.h"
-#include "Race/OnlineRacingRacePlayerState.h"
+#include "Race/OnlineRacingMatchGameMode.h"
+#include "Race/OnlineRacingMatchGameState.h"
+#include "Race/OnlineRacingMatchPlayerState.h"
 #include "UI/OnlineRacingDebugWidget.h"
-#include "UI/OnlineRacingRaceCountdownWidget.h"
-#include "UI/OnlineRacingRaceResultsWidget.h"
+#include "UI/OnlineRacingCountdownWidget.h"
+#include "UI/OnlineRacingResultsWidget.h"
 
 void AOnlineRacingPlayerController::BeginPlay()
 {
@@ -117,7 +117,7 @@ void AOnlineRacingPlayerController::SetupInputComponent()
 
 	if (IsValid(RaceCountdownWidgetClass.Get()) && !IsValid(RaceCountdownWidget))
 	{
-		RaceCountdownWidget = CreateWidget<UOnlineRacingRaceCountdownWidget>(this, RaceCountdownWidgetClass);
+		RaceCountdownWidget = CreateWidget<UOnlineRacingCountdownWidget>(this, RaceCountdownWidgetClass);
 		if (IsValid(RaceCountdownWidget))
 		{
 			RaceCountdownWidget->AddToPlayerScreen(20);
@@ -131,7 +131,7 @@ void AOnlineRacingPlayerController::SetupInputComponent()
 
 	if (IsValid(RaceResultsWidgetClass.Get()) && !IsValid(RaceResultsWidget))
 	{
-		RaceResultsWidget = CreateWidget<UOnlineRacingRaceResultsWidget>(this, RaceResultsWidgetClass);
+		RaceResultsWidget = CreateWidget<UOnlineRacingResultsWidget>(this, RaceResultsWidgetClass);
 		if (IsValid(RaceResultsWidget))
 		{
 			RaceResultsWidget->AddToPlayerScreen(30);
@@ -230,7 +230,7 @@ void AOnlineRacingPlayerController::HandleVehicleRespawnRequest()
 		return;
 	}
 
-	AOnlineRacingRaceGameMode* const RaceGameMode = GetWorld()->GetAuthGameMode<AOnlineRacingRaceGameMode>();
+	AOnlineRacingMatchGameMode* const RaceGameMode = GetWorld()->GetAuthGameMode<AOnlineRacingMatchGameMode>();
 	if (IsValid(RaceGameMode))
 	{
 		RaceGameMode->HandleRespawnRequest(*this);
@@ -242,7 +242,7 @@ void AOnlineRacingPlayerController::HandleVehicleRespawnRequest()
 
 void AOnlineRacingPlayerController::BindRaceGameState()
 {
-	AOnlineRacingRaceGameState* const NewRaceGameState = GetWorld()->GetGameState<AOnlineRacingRaceGameState>();
+	AOnlineRacingMatchGameState* const NewRaceGameState = GetWorld()->GetGameState<AOnlineRacingMatchGameState>();
 	if (RaceGameState == NewRaceGameState)
 	{
 		return;
@@ -278,7 +278,7 @@ void AOnlineRacingPlayerController::UnbindRaceGameState()
 
 void AOnlineRacingPlayerController::BindRacePlayerState()
 {
-	AOnlineRacingRacePlayerState* const NewRacePlayerState = GetPlayerState<AOnlineRacingRacePlayerState>();
+	AOnlineRacingMatchPlayerState* const NewRacePlayerState = GetPlayerState<AOnlineRacingMatchPlayerState>();
 	if (RacePlayerState == NewRacePlayerState)
 	{
 		return;
@@ -308,31 +308,31 @@ void AOnlineRacingPlayerController::UnbindRacePlayerState()
 	RacePlayerState.Reset();
 }
 
-void AOnlineRacingPlayerController::HandleRacePhaseChanged(const EOnlineRacingRacePhase NewRacePhase)
+void AOnlineRacingPlayerController::HandleRacePhaseChanged(const EOnlineRacingMatchPhase NewRacePhase)
 {
 	switch (NewRacePhase)
 	{
-	case EOnlineRacingRacePhase::Waiting:
+	case EOnlineRacingMatchPhase::Waiting:
 		bRaceStartPresented = false;
 		SetVehicleRaceInputEnabled(false);
 		SetDebugWidgetVisible(true);
 		HideCountdownWidget();
 		HideRaceResults();
 		break;
-	case EOnlineRacingRacePhase::Countdown:
+	case EOnlineRacingMatchPhase::Countdown:
 		bRaceStartPresented = false;
 		SetVehicleRaceInputEnabled(false);
 		SetDebugWidgetVisible(true);
 		HideRaceResults();
 		UpdateRaceCountdown();
 		break;
-	case EOnlineRacingRacePhase::Racing:
+	case EOnlineRacingMatchPhase::Racing:
 		ApplyRaceInputStateToVehicle();
 		SetDebugWidgetVisible(true);
 		HideRaceResults();
 		PresentRaceStart();
 		break;
-	case EOnlineRacingRacePhase::Finished:
+	case EOnlineRacingMatchPhase::Finished:
 		SetVehicleRaceInputEnabled(false);
 		SetDebugWidgetVisible(false);
 		HideCountdownWidget();
@@ -343,9 +343,9 @@ void AOnlineRacingPlayerController::HandleRacePhaseChanged(const EOnlineRacingRa
 	}
 }
 
-void AOnlineRacingPlayerController::HandleRaceResultsChanged(const TArray<FOnlineRacingRaceResult>&)
+void AOnlineRacingPlayerController::HandleRaceResultsChanged(const TArray<FOnlineRacingMatchResult>&)
 {
-	if (!RaceGameState.IsValid() || RaceGameState->GetRacePhase() != EOnlineRacingRacePhase::Finished)
+	if (!RaceGameState.IsValid() || RaceGameState->GetRacePhase() != EOnlineRacingMatchPhase::Finished)
 	{
 		return;
 	}
@@ -366,7 +366,7 @@ void AOnlineRacingPlayerController::HandlePlayerFinishedChanged(const bool bFini
 
 void AOnlineRacingPlayerController::UpdateRaceCountdown()
 {
-	if (!RaceGameState.IsValid() || RaceGameState->GetRacePhase() != EOnlineRacingRacePhase::Countdown)
+	if (!RaceGameState.IsValid() || RaceGameState->GetRacePhase() != EOnlineRacingMatchPhase::Countdown)
 	{
 		return;
 	}
@@ -468,8 +468,8 @@ void AOnlineRacingPlayerController::ApplyRaceInputStateToVehicle()
 		return;
 	}
 
-	bool bEnableRaceInput = RaceGameState->GetRacePhase() == EOnlineRacingRacePhase::Racing;
-	if (RaceGameState->GetRacePhase() == EOnlineRacingRacePhase::Countdown && bRaceStartPresented)
+	bool bEnableRaceInput = RaceGameState->GetRacePhase() == EOnlineRacingMatchPhase::Racing;
+	if (RaceGameState->GetRacePhase() == EOnlineRacingMatchPhase::Countdown && bRaceStartPresented)
 	{
 		bEnableRaceInput = true;
 	}

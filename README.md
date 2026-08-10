@@ -40,13 +40,13 @@ The original Vehicle Template time-trial variant remains in the repository as re
 | --- | --- |
 | `AOnlineRacingPawn` | Owns the Chaos vehicle, cameras, local vehicle input, input locking, and authoritative teleport/reset operations. |
 | `UOnlineRacingVehicleTelemetryComponent` | Reads post-physics Chaos state and exposes a stable game-thread telemetry snapshot. It does not own race rules. |
-| `AOnlineRacingRaceGameMode` | Owns server-only race orchestration, checkpoint validation, lap progression, countdown start, finish timing and ordering, and respawn selection. |
-| `AOnlineRacingRaceGameState` | Replicates public race phase, synchronized timing, race configuration, and the ordered results snapshot. |
-| `AOnlineRacingRacePlayerState` | Replicates per-player lap, expected checkpoint, last confirmed checkpoint, finish position, and finish time. |
-| `AOnlineRacingRaceCheckpoint` | Defines an ordered overlap volume and a respawn transform; reports vehicle crossings to server race logic. |
+| `AOnlineRacingMatchGameMode` | Owns server-only race orchestration, checkpoint validation, lap progression, countdown start, finish timing and ordering, and respawn selection. |
+| `AOnlineRacingMatchGameState` | Replicates public race phase, synchronized timing, race configuration, and the ordered results snapshot. |
+| `AOnlineRacingMatchPlayerState` | Replicates per-player lap, expected checkpoint, last confirmed checkpoint, finish position, and finish time. |
+| `AOnlineRacingCheckpoint` | Defines an ordered overlap volume and a respawn transform; reports vehicle crossings to server race logic. |
 | `AOnlineRacingPlayerController` | Coordinates local UI and input state and sends respawn requests to the server. |
-| `UOnlineRacingRaceCountdownWidget` | Presents countdown values and `GO`; it never starts or advances the race. |
-| `UOnlineRacingRaceResultsWidget` | Presents replicated finish positions and times; Blueprint may replace the fallback text with styled rows. |
+| `UOnlineRacingCountdownWidget` | Presents countdown values and `GO`; it never starts or advances the race. |
+| `UOnlineRacingResultsWidget` | Presents replicated finish positions and times; Blueprint may replace the fallback text with styled rows. |
 | `UOnlineRacingDebugWidget` | Presents telemetry and replicated networking/race state for development. |
 
 ### Authority model

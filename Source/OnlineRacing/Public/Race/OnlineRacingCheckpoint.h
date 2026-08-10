@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
-#include "OnlineRacingRaceCheckpoint.generated.h"
+#include "OnlineRacingCheckpoint.generated.h"
 
 class UArrowComponent;
 class UBoxComponent;
@@ -9,12 +9,12 @@ class UPrimitiveComponent;
 struct FHitResult;
 
 UCLASS(Abstract)
-class ONLINERACING_API AOnlineRacingRaceCheckpoint : public AActor
+class ONLINERACING_API AOnlineRacingCheckpoint : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	AOnlineRacingRaceCheckpoint();
+	AOnlineRacingCheckpoint();
 
 	int32 GetCheckpointIndex() const { return CheckpointIndex; }
 	FTransform GetRespawnTransform() const;

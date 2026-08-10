@@ -7,16 +7,16 @@
 #include "OnlineRacingPlayerController.generated.h"
 
 class AOnlineRacingPawn;
-class AOnlineRacingRaceGameState;
-class AOnlineRacingRacePlayerState;
+class AOnlineRacingMatchGameState;
+class AOnlineRacingMatchPlayerState;
 class UInputMappingContext;
 class UOnlineRacingDebugWidget;
-class UOnlineRacingRaceCountdownWidget;
-class UOnlineRacingRaceResultsWidget;
+class UOnlineRacingCountdownWidget;
+class UOnlineRacingResultsWidget;
 class UOnlineRacingUI;
 class UUserWidget;
-enum class EOnlineRacingRacePhase : uint8;
-struct FOnlineRacingRaceResult;
+enum class EOnlineRacingMatchPhase : uint8;
+struct FOnlineRacingMatchResult;
 
 UCLASS(Abstract, Config = "Game")
 class AOnlineRacingPlayerController : public APlayerController
@@ -61,16 +61,16 @@ protected:
 	TObjectPtr<UOnlineRacingDebugWidget> DebugWidget;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Race|UI")
-	TSubclassOf<UOnlineRacingRaceCountdownWidget> RaceCountdownWidgetClass;
+	TSubclassOf<UOnlineRacingCountdownWidget> RaceCountdownWidgetClass;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UOnlineRacingRaceCountdownWidget> RaceCountdownWidget;
+	TObjectPtr<UOnlineRacingCountdownWidget> RaceCountdownWidget;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Race|UI")
-	TSubclassOf<UOnlineRacingRaceResultsWidget> RaceResultsWidgetClass;
+	TSubclassOf<UOnlineRacingResultsWidget> RaceResultsWidgetClass;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UOnlineRacingRaceResultsWidget> RaceResultsWidget;
+	TObjectPtr<UOnlineRacingResultsWidget> RaceResultsWidget;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Race|UI", meta = (ClampMin = "0.0", Units = "s"))
 	float RaceStartedDisplayDuration = 1.f;
@@ -99,8 +99,8 @@ private:
 	void BindRacePlayerState();
 	void CacheVehiclePawn();
 	void HandlePlayerFinishedChanged(bool bFinished);
-	void HandleRacePhaseChanged(EOnlineRacingRacePhase NewRacePhase);
-	void HandleRaceResultsChanged(const TArray<FOnlineRacingRaceResult>& RaceResults);
+	void HandleRacePhaseChanged(EOnlineRacingMatchPhase NewRacePhase);
+	void HandleRaceResultsChanged(const TArray<FOnlineRacingMatchResult>& RaceResults);
 	void HandleVehicleRespawnRequest();
 	void HideCountdownWidget();
 	void HideRaceResults();
@@ -113,8 +113,8 @@ private:
 	void UnbindRacePlayerState();
 	void UpdateRaceCountdown();
 
-	TWeakObjectPtr<AOnlineRacingRaceGameState> RaceGameState;
-	TWeakObjectPtr<AOnlineRacingRacePlayerState> RacePlayerState;
+	TWeakObjectPtr<AOnlineRacingMatchGameState> RaceGameState;
+	TWeakObjectPtr<AOnlineRacingMatchPlayerState> RacePlayerState;
 	FDelegateHandle RacePhaseChangedHandle;
 	FDelegateHandle RaceFinishedChangedHandle;
 	FDelegateHandle RaceResultsChangedHandle;

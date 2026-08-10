@@ -1,13 +1,13 @@
-#include "Race/OnlineRacingRaceCheckpoint.h"
+#include "Race/OnlineRacingCheckpoint.h"
 
 #include "Components/ArrowComponent.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
 
 #include "OnlineRacingPawn.h"
-#include "Race/OnlineRacingRaceGameMode.h"
+#include "Race/OnlineRacingMatchGameMode.h"
 
-AOnlineRacingRaceCheckpoint::AOnlineRacingRaceCheckpoint()
+AOnlineRacingCheckpoint::AOnlineRacingCheckpoint()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = false;
@@ -22,7 +22,7 @@ AOnlineRacingRaceCheckpoint::AOnlineRacingRaceCheckpoint()
 	CollisionBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	CollisionBox->SetCollisionResponseToChannel(ECC_Vehicle, ECR_Overlap);
 	CollisionBox->SetGenerateOverlapEvents(true);
-	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AOnlineRacingRaceCheckpoint::HandleCollisionBoxBeginOverlap);
+	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AOnlineRacingCheckpoint::HandleCollisionBoxBeginOverlap);
 
 	RespawnPoint = CreateDefaultSubobject<UArrowComponent>(TEXT("RespawnPoint"));
 	RespawnPoint->SetupAttachment(CollisionBox);
@@ -32,12 +32,12 @@ AOnlineRacingRaceCheckpoint::AOnlineRacingRaceCheckpoint()
 	RespawnPoint->bIsScreenSizeScaled = true;
 }
 
-FTransform AOnlineRacingRaceCheckpoint::GetRespawnTransform() const
+FTransform AOnlineRacingCheckpoint::GetRespawnTransform() const
 {
 	return RespawnPoint->GetComponentTransform();
 }
 
-void AOnlineRacingRaceCheckpoint::HandleCollisionBoxBeginOverlap(
+void AOnlineRacingCheckpoint::HandleCollisionBoxBeginOverlap(
 	UPrimitiveComponent*,
 	AActor* OtherActor,
 	UPrimitiveComponent*,
@@ -56,7 +56,7 @@ void AOnlineRacingRaceCheckpoint::HandleCollisionBoxBeginOverlap(
 		return;
 	}
 
-	AOnlineRacingRaceGameMode* const RaceGameMode = GetWorld()->GetAuthGameMode<AOnlineRacingRaceGameMode>();
+	AOnlineRacingMatchGameMode* const RaceGameMode = GetWorld()->GetAuthGameMode<AOnlineRacingMatchGameMode>();
 	if (!IsValid(RaceGameMode))
 	{
 		return;

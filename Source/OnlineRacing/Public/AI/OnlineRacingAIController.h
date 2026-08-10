@@ -7,7 +7,7 @@
 
 class USplineComponent;
 class AOnlineRacingPawn;
-class AOnlineRacingRacingLine;
+class AOnlineRacingDrivingLine;
 
 UCLASS()
 class ONLINERACING_API AOnlineRacingAIController : public AAIController
@@ -115,7 +115,7 @@ private:
 	
 	void SetDrivingEnabled(bool bEnabled);
 	
-	void FindRacingLine();
+	void FindDrivingLine();
 
 	bool UpdateStuckDetection(float DeltaSeconds);
 	void RequestRecovery();
@@ -135,7 +135,7 @@ private:
 	void DrawDrivingDebug(const FVector& TargetLocation, float SteeringInput, float UpcomingTurnAmount) const;
 	
 	TWeakObjectPtr<AOnlineRacingPawn> VehiclePawn;
-	TWeakObjectPtr<AOnlineRacingRacingLine> RacingLine;
+	TWeakObjectPtr<AOnlineRacingDrivingLine> DrivingLine;
 	
 	float StuckTime = 0.f;
 	float RecoveryCooldownRemaining = 0.f;

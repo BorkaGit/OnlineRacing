@@ -6,12 +6,12 @@
 #include "EngineUtils.h"
 #include "OnlineRacing.h"
 #include "OnlineRacingPawn.h"
-#include "AI/OnlineRacingRacingLine.h"
+#include "AI/OnlineRacingDrivingLine.h"
 #include "Components/SplineComponent.h"
 #include "GameFramework/PlayerState.h"
-#include "Race/OnlineRacingRaceGameMode.h"
-#include "Race/OnlineRacingRaceGameState.h"
-#include "Race/OnlineRacingRacePlayerState.h"
+#include "Race/OnlineRacingMatchGameMode.h"
+#include "Race/OnlineRacingMatchGameState.h"
+#include "Race/OnlineRacingMatchPlayerState.h"
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 
@@ -83,7 +83,7 @@ void AOnlineRacingAIController::BeginPlay()
 		return;
 	}
 	
-	FindRacingLine();
+	FindDrivingLine();
 }
 
 bool AOnlineRacingAIController::CanDrive() const
@@ -99,18 +99,18 @@ bool AOnlineRacingAIController::CanDrive() const
 		return false;
 	}
 	
-	const AOnlineRacingRaceGameState* const RaceGameState = CurrentWorld->GetGameState<AOnlineRacingRaceGameState>();
+	const AOnlineRacingMatchGameState* const RaceGameState = CurrentWorld->GetGameState<AOnlineRacingMatchGameState>();
 	if (!IsValid(RaceGameState))
 	{
 		return false;
 	}
 	
-	if (RaceGameState->GetRacePhase() != EOnlineRacingRacePhase::Racing)
+	if (RaceGameState->GetRacePhase() != EOnlineRacingMatchPhase::Racing)
 	{
 		return false;
 	}
 	
-	const AOnlineRacingRacePlayerState* const RacePlayerState = VehiclePawn->GetPlayerState<AOnlineRacingRacePlayerState>();
+	const AOnlineRacingMatchPlayerState* const RacePlayerState = VehiclePawn->GetPlayerState<AOnlineRacingMatchPlayerState>();
 	if (!IsValid(RacePlayerState))
 	{
 		return false;
@@ -130,46 +130,46 @@ void AOnlineRacingAIController::SetDrivingEnabled(bool bEnabled)
 	VehiclePawn->SetRaceInputEnabled(bDrivingEnabled);
 }
 
-void AOnlineRacingAIController::FindRacingLine()
+void AOnlineRacingAIController::FindDrivingLine()
 {
-	AOnlineRacingRacingLine* FoundRacingLine = nullptr;
-	uint32 RacingLineCount = 0;
+	AOnlineRacingDrivingLine* FoundDrivingLine = nullptr;
+	uint32 DrivingLineCount = 0;
 	
-	for (TActorIterator<AOnlineRacingRacingLine> It(GetWorld()); It; ++It)
+	for (TActorIterator<AOnlineRacingDrivingLine> It(GetWorld()); It; ++It)
 	{
-		AOnlineRacingRacingLine* const Candidate = *It;
+		AOnlineRacingDrivingLine* const Candidate = *It;
 		if (!IsValid(Candidate))
 		{
 			continue;
 		}
 		
-		++RacingLineCount;
+		++DrivingLineCount;
 		
-		if (!FoundRacingLine)
+		if (!FoundDrivingLine)
 		{
-			FoundRacingLine = Candidate;
+			FoundDrivingLine = Candidate;
 		}
 	}
 	
-	if (RacingLineCount != 1 || !IsValid(FoundRacingLine))
+	if (DrivingLineCount != 1 || !IsValid(FoundDrivingLine))
 	{
 		UE_LOG(
 			LogOnlineRacing,
 			Error,
-			TEXT("[Server][VehicleAI] Expected exactly one RacingLine, found %u."),
-			RacingLineCount);
+			TEXT("[Server][VehicleAI] Expected exactly one DrivingLine, found %u."),
+			DrivingLineCount);
 		return;
 	}
 
-	RacingLine = FoundRacingLine;
+	DrivingLine = FoundDrivingLine;
 
-	const USplineComponent* const SplineComponent = RacingLine->GetSplineComponent();
+	const USplineComponent* const SplineComponent = DrivingLine->GetSplineComponent();
 
 	UE_LOG(
 		LogOnlineRacing,
 		Display,
-		TEXT("[Server][VehicleAI] Found RacingLine %s, length %.0f cm."),
-		*GetNameSafe(RacingLine.Get()),
+		TEXT("[Server][VehicleAI] Found DrivingLine %s, length %.0f cm."),
+		*GetNameSafe(DrivingLine.Get()),
 		SplineComponent->GetSplineLength());
 }
 
@@ -226,7 +226,7 @@ void AOnlineRacingAIController::RequestRecovery()
 		return;
 	}
 	
-	AOnlineRacingRaceGameMode* const RaceGameMode = CurrentWorld->GetAuthGameMode<AOnlineRacingRaceGameMode>();
+	AOnlineRacingMatchGameMode* const RaceGameMode = CurrentWorld->GetAuthGameMode<AOnlineRacingMatchGameMode>();
 	if (!IsValid(RaceGameMode))
 	{
 		UE_LOG(
@@ -284,12 +284,12 @@ bool AOnlineRacingAIController::TryGetDrivingTarget(FVector& OutTargetLocation, 
 	OutTargetLocation = FVector::ZeroVector;
 	OutCurrentSplineDistance = 0.f;
 	
-	if (!VehiclePawn.IsValid() || !RacingLine.IsValid())
+	if (!VehiclePawn.IsValid() || !DrivingLine.IsValid())
 	{
 		return false;
 	}
 
-	const USplineComponent* const SplineComponent = RacingLine->GetSplineComponent();
+	const USplineComponent* const SplineComponent = DrivingLine->GetSplineComponent();
 	if (!IsValid(SplineComponent))
 	{
 		return false;
@@ -342,12 +342,12 @@ float AOnlineRacingAIController::CalculateTargetSpeedKmh(float TurnAmount) const
 
 float AOnlineRacingAIController::CalculateUpcomingTurnAmount(const float CurrentSplineDistance) const
 {
-	if (!RacingLine.IsValid())
+	if (!DrivingLine.IsValid())
 	{
 		return 0.f;
 	}
 	
-	const USplineComponent* const SplineComponent = RacingLine->GetSplineComponent();
+	const USplineComponent* const SplineComponent = DrivingLine->GetSplineComponent();
 	if (!IsValid(SplineComponent))
 	{
 		return 0.f;

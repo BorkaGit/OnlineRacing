@@ -1,10 +1,10 @@
 #pragma once
 
 #include "GameFramework/GameStateBase.h"
-#include "OnlineRacingRaceGameState.generated.h"
+#include "OnlineRacingMatchGameState.generated.h"
 
 UENUM(BlueprintType)
-enum class EOnlineRacingRacePhase : uint8
+enum class EOnlineRacingMatchPhase : uint8
 {
 	Waiting,
 	Countdown,
@@ -13,7 +13,7 @@ enum class EOnlineRacingRacePhase : uint8
 };
 
 USTRUCT(BlueprintType)
-struct ONLINERACING_API FOnlineRacingRaceResult
+struct ONLINERACING_API FOnlineRacingMatchResult
 {
 	GENERATED_BODY()
 
@@ -27,11 +27,11 @@ struct ONLINERACING_API FOnlineRacingRaceResult
 	double FinishTimeSeconds = 0.0;
 };
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnlineRacingRacePhaseChanged, EOnlineRacingRacePhase);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnlineRacingRaceResultsChanged, const TArray<FOnlineRacingRaceResult>&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnlineRacingMatchPhaseChanged, EOnlineRacingMatchPhase);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnlineRacingMatchResultsChanged, const TArray<FOnlineRacingMatchResult>&);
 
 UCLASS()
-class ONLINERACING_API AOnlineRacingRaceGameState : public AGameStateBase
+class ONLINERACING_API AOnlineRacingMatchGameState : public AGameStateBase
 {
 	GENERATED_BODY()
 
@@ -40,16 +40,16 @@ public:
 
 	int32 GetCheckpointCount() const { return CheckpointCount; }
 	double GetCountdownTimeRemaining() const;
-	const TArray<FOnlineRacingRaceResult>& GetRaceResults() const { return RaceResults; }
+	const TArray<FOnlineRacingMatchResult>& GetRaceResults() const { return RaceResults; }
 	double GetRaceStartServerTime() const { return RaceStartServerTime; }
-	EOnlineRacingRacePhase GetRacePhase() const { return RacePhase; }
+	EOnlineRacingMatchPhase GetRacePhase() const { return RacePhase; }
 	int32 GetTotalLaps() const { return TotalLaps; }
-	FOnlineRacingRacePhaseChanged& OnRacePhaseChanged() { return RacePhaseChanged; }
-	FOnlineRacingRaceResultsChanged& OnRaceResultsChanged() { return RaceResultsChanged; }
+	FOnlineRacingMatchPhaseChanged& OnRacePhaseChanged() { return RacePhaseChanged; }
+	FOnlineRacingMatchResultsChanged& OnRaceResultsChanged() { return RaceResultsChanged; }
 
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_RacePhase, VisibleInstanceOnly, BlueprintReadOnly, Category = "Race")
-	EOnlineRacingRacePhase RacePhase = EOnlineRacingRacePhase::Waiting;
+	EOnlineRacingMatchPhase RacePhase = EOnlineRacingMatchPhase::Waiting;
 
 	UPROPERTY(Replicated, VisibleInstanceOnly, BlueprintReadOnly, Category = "Race", meta = (Units = "s"))
 	double CountdownEndServerTime = 0.0;
@@ -64,13 +64,13 @@ protected:
 	int32 CheckpointCount = 0;
 
 	UPROPERTY(ReplicatedUsing = OnRep_RaceResults, VisibleInstanceOnly, BlueprintReadOnly, Category = "Race|Results")
-	TArray<FOnlineRacingRaceResult> RaceResults;
+	TArray<FOnlineRacingMatchResult> RaceResults;
 
 private:
-	friend class AOnlineRacingRaceGameMode;
+	friend class AOnlineRacingMatchGameMode;
 
-	FOnlineRacingRacePhaseChanged RacePhaseChanged;
-	FOnlineRacingRaceResultsChanged RaceResultsChanged;
+	FOnlineRacingMatchPhaseChanged RacePhaseChanged;
+	FOnlineRacingMatchResultsChanged RaceResultsChanged;
 
 	UFUNCTION()
 	void OnRep_RacePhase();
@@ -78,9 +78,9 @@ private:
 	UFUNCTION()
 	void OnRep_RaceResults();
 
-	void AddRaceResult(const FOnlineRacingRaceResult& RaceResult);
+	void AddRaceResult(const FOnlineRacingMatchResult& RaceResult);
 	void BeginCountdown(double NewCountdownEndServerTime);
 	void InitializeRace(int32 NewTotalLaps, int32 NewCheckpointCount);
 	void StartRace(double NewRaceStartServerTime);
-	void SetRacePhase(EOnlineRacingRacePhase NewRacePhase);
+	void SetRacePhase(EOnlineRacingMatchPhase NewRacePhase);
 };

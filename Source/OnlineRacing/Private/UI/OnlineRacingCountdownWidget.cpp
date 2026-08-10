@@ -1,20 +1,20 @@
-#include "UI/OnlineRacingRaceCountdownWidget.h"
+#include "UI/OnlineRacingCountdownWidget.h"
 
 #include "Components/TextBlock.h"
 
-void UOnlineRacingRaceCountdownWidget::NativeConstruct()
+void UOnlineRacingCountdownWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	HideCountdown();
 }
 
-void UOnlineRacingRaceCountdownWidget::HideCountdown()
+void UOnlineRacingCountdownWidget::HideCountdown()
 {
 	SetVisibility(ESlateVisibility::Collapsed);
 	LastDisplayedValue = INDEX_NONE;
 }
 
-void UOnlineRacingRaceCountdownWidget::ShowCountdown(const double TimeRemaining)
+void UOnlineRacingCountdownWidget::ShowCountdown(const double TimeRemaining)
 {
 	SetVisibility(ESlateVisibility::HitTestInvisible);
 
@@ -33,7 +33,7 @@ void UOnlineRacingRaceCountdownWidget::ShowCountdown(const double TimeRemaining)
 	BP_CountdownValueChanged(CountdownValue);
 }
 
-void UOnlineRacingRaceCountdownWidget::ShowRaceStarted()
+void UOnlineRacingCountdownWidget::ShowRaceStarted()
 {
 	SetVisibility(ESlateVisibility::HitTestInvisible);
 	LastDisplayedValue = 0;
