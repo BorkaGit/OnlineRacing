@@ -17,50 +17,49 @@ public:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	float GetSpeedKmh() const { return SpeedKmh; }
+	FORCEINLINE float GetSpeedKmh() const { return SpeedKmh; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	float GetEngineRpm() const { return EngineRpm; }
+	FORCEINLINE float GetEngineIdleRpm() const { return EngineIdleRpm; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	float GetNormalizedRpm() const { return NormalizedRpm; }
+	FORCEINLINE float GetEngineMaxRpm() const { return EngineMaxRpm; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	int32 GetCurrentGear() const { return CurrentGear; }
+	FORCEINLINE float GetEngineRpm() const { return EngineRpm; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	float GetThrottleInput() const { return ThrottleInput; }
+	FORCEINLINE float GetNormalizedRpm() const { return NormalizedRpm; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	float GetBrakeInput() const { return BrakeInput; }
+	FORCEINLINE int32 GetCurrentGear() const { return CurrentGear; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	float GetSteeringInput() const { return SteeringInput; }
+	FORCEINLINE int32 GetTargetGear() const { return TargetGear; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	bool IsHandbrakeActive() const { return bHandbrakeActive; }
+	FORCEINLINE float GetThrottleInput() const { return ThrottleInput; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	int32 GetWheelsInContact() const { return WheelsInContact; }
+	FORCEINLINE float GetBrakeInput() const { return BrakeInput; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	bool IsAnyWheelSlipping() const { return bAnyWheelSlipping; }
+	FORCEINLINE float GetSteeringInput() const { return SteeringInput; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	bool IsAnyWheelSkidding() const { return bAnyWheelSkidding; }
+	FORCEINLINE bool IsHandbrakeActive() const { return bHandbrakeActive; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	float GetMaxSlipMagnitude() const { return MaxSlipMagnitude; }
+	FORCEINLINE int32 GetWheelsInContact() const { return WheelsInContact; }
 
-	UFUNCTION(BlueprintPure, Category = "Vehicle|Telemetry")
-	float GetMaxSkidMagnitude() const { return MaxSkidMagnitude; }
+	FORCEINLINE bool IsAnyWheelSlipping() const { return bAnyWheelSlipping; }
+
+	FORCEINLINE bool IsAnyWheelSkidding() const { return bAnyWheelSkidding; }
+
+	FORCEINLINE float GetMaxSlipMagnitude() const { return MaxSlipMagnitude; }
+
+	FORCEINLINE float GetMaxSkidMagnitude() const { return MaxSkidMagnitude; }
 
 protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Vehicle|Telemetry", meta = (ForceUnits = "km/h"))
 	float SpeedKmh = 0.f;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Vehicle|Telemetry")
+	float EngineIdleRpm = 0.f;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Vehicle|Telemetry")
+	float EngineMaxRpm = 0.f;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Vehicle|Telemetry")
 	float EngineRpm = 0.f;
@@ -70,6 +69,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Vehicle|Telemetry")
 	int32 CurrentGear = 0;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Vehicle|Telemetry")
+	int32 TargetGear = 0;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Vehicle|Telemetry")
 	float ThrottleInput = 0.f;

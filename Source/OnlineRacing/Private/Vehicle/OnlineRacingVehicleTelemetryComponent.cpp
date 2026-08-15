@@ -28,14 +28,14 @@ void UOnlineRacingVehicleTelemetryComponent::BeginPlay()
 	VehicleMovement = OwnerActor->FindComponentByClass<UChaosWheeledVehicleMovementComponent>();
 	if (!VehicleMovement.IsValid())
 	{
-		UE_LOG(
-			LogOnlineRacing,
-			Error,
-			TEXT("[VehicleTelemetry] Chaos movement component is missing on %s."),
-			*GetNameSafe(GetOwner()));
+		UE_LOG(LogOnlineRacing, Error, TEXT("[VehicleTelemetry] Chaos movement component is missing on %s."), *GetNameSafe(GetOwner()));
 
 		SetComponentTickEnabled(false);
+		return;
 	}
+
+	EngineIdleRpm = VehicleMovement->EngineSetup.EngineIdleRPM;
+	EngineMaxRpm = VehicleMovement->GetEngineMaxRotationSpeed();
 }
 
 void UOnlineRacingVehicleTelemetryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -47,9 +47,7 @@ void UOnlineRacingVehicleTelemetryComponent::TickComponent(float DeltaTime, ELev
 		return;
 	}
 
-	constexpr float CentimetersPerSecondToKilometersPerHour = 0.036f;
-
-	SpeedKmh = FMath::Abs(VehicleMovement->GetForwardSpeed() * CentimetersPerSecondToKilometersPerHour);
+	SpeedKmh = FMath::Abs(Chaos::CmSToKmH(VehicleMovement->GetForwardSpeed()));
 	EngineRpm = VehicleMovement->GetEngineRotationSpeed();
 
 	const float MaxEngineRpm = VehicleMovement->GetEngineMaxRotationSpeed();
@@ -60,6 +58,7 @@ void UOnlineRacingVehicleTelemetryComponent::TickComponent(float DeltaTime, ELev
 	}
 
 	CurrentGear = VehicleMovement->GetCurrentGear();
+	TargetGear = VehicleMovement->GetTargetGear();
 	ThrottleInput = VehicleMovement->GetThrottleInput();
 	BrakeInput = VehicleMovement->GetBrakeInput();
 	SteeringInput = VehicleMovement->GetSteeringInput();

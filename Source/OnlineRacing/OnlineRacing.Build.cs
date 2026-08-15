@@ -31,6 +31,13 @@ public class OnlineRacing : ModuleRules
 			"OnlineRacing/Variant_TimeTrial/UI"
 		});
 
-		PrivateDependencyModuleNames.Add("Slate");
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"AudioMixer",
+			"ChaosVehiclesCore",
+			"MotoSynth",
+			"SignalProcessing",
+			"Slate"
+		});
 	}
 }

@@ -10,9 +10,11 @@
 #include "InputActionValue.h"
 #include "TimerManager.h"
 
+#include "Audio/OnlineRacingVehicleAudioComponent.h"
 #include "OnlineRacing.h"
 #include "OnlineRacingPlayerController.h"
 #include "Race/OnlineRacingMatchGameMode.h"
+#include "SynthComponents/SynthComponentMoto.h"
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 AOnlineRacingPawn::AOnlineRacingPawn()
@@ -49,6 +51,13 @@ AOnlineRacingPawn::AOnlineRacingPawn()
 	ChaosVehicleMovement = CastChecked<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement());
 
 	VehicleTelemetry = CreateDefaultSubobject<UOnlineRacingVehicleTelemetryComponent>(TEXT("Vehicle Telemetry"));
+
+	VehicleAudio = CreateDefaultSubobject<UOnlineRacingVehicleAudioComponent>(TEXT("Vehicle Audio"));
+
+	EngineSynth = CreateDefaultSubobject<USynthComponentMoto>(TEXT("Engine Synth"));
+	EngineSynth->SetupAttachment(GetMesh());
+	EngineSynth->bAutoActivate = false;
+	EngineSynth->bAllowSpatialization = true;
 }
 
 void AOnlineRacingPawn::BeginPlay()
@@ -358,9 +367,9 @@ void AOnlineRacingPawn::FlippedCheck()
 	if (bPreviousFlipCheck)
 	{
 		AController* const VehicleController = GetController();
-		
+
 		AOnlineRacingMatchGameMode* const RaceGameMode = CurrentWorld->GetAuthGameMode<AOnlineRacingMatchGameMode>();
-		
+
 		if (IsValid(VehicleController) && IsValid(RaceGameMode))
 		{
 			RaceGameMode->HandleRespawnRequest(*VehicleController);
