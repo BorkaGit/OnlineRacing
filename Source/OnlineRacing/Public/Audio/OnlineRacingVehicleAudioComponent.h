@@ -45,6 +45,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vehicle|Audio|Engine", meta = (ClampMin = "0.01"))
 	float RpmFallInterpolationSpeed = 12.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vehicle|Audio|Engine", meta = (ClampMin = "0.01", ClampMax = "1.0"))
+	float MotoSynthFullVolumeNormalizedRpm = 0.15f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vehicle|Audio|Engine", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MotoSynthBaseVolumeMultiplier = 0.4f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vehicle|Audio|Engine Load", meta = (ClampMin = "0.01"))
 	float LoadFallInterpolationSpeed = 4.f;
 

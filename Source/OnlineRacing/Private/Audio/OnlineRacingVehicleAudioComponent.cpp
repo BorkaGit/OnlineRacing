@@ -219,9 +219,7 @@ void UOnlineRacingVehicleAudioComponent::UpdateMotoSynthVolume() const
 
 	if (IsValid(VehicleLoopAudio))
 	{
-		constexpr float FadeRangeFraction = 0.05f;
-
-		const float FadeEndRpm = FMath::Lerp(MotoSynthMinRpm, MotoSynthMaxRpm, FadeRangeFraction);
+		const float FadeEndRpm = FMath::Lerp(MotoSynthMinRpm, MotoSynthMaxRpm, MotoSynthFullVolumeNormalizedRpm);
 
 		MotoSynthVolume = FMath::GetMappedRangeValueClamped(FVector2D(MotoSynthMinRpm, FadeEndRpm), FVector2D(0.0, 1.0), CurrentMotoSynthRpm);
 
@@ -230,6 +228,7 @@ void UOnlineRacingVehicleAudioComponent::UpdateMotoSynthVolume() const
 	const float LoadVolumeMultiplier = FMath::Lerp(MotoSynthCoastVolumeMultiplier, 1.f, SmoothedEngineLoad);
 
 	MotoSynthVolume *= LoadVolumeMultiplier;
+	MotoSynthVolume *= MotoSynthBaseVolumeMultiplier;
 
 	EngineSynth->SetVolumeMultiplier(MotoSynthVolume);
 }
