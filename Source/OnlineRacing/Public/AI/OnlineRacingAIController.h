@@ -13,27 +13,35 @@ UCLASS()
 class ONLINERACING_API AOnlineRacingAIController : public AAIController
 {
 	GENERATED_BODY()
-	
+
 public:
 	AOnlineRacingAIController();
-	
+
 	virtual void Tick(float DeltaSeconds) override;
-	
+
+	void ConfigureDrivingLane(int32 LaneIndex, int32 LaneCount);
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
-	
+
 	virtual void BeginPlay() override;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Identity")
 	FString BotDisplayName = TEXT("AI Racer");
-	
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Driving", meta = (ClampMin = "100.0", ForceUnits = "cm"))
+	float LaneSpacingCm = 220.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Driving", meta = (ClampMin = "0.01"))
+	float LaneChangeInterpolationSpeed = 2.f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Driving", meta = (ClampMin = "100.0", ForceUnits = "cm"))
 	float LookAheadDistance = 1200.f;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Driving", meta = (ClampMin = "0.1", ClampMax = "5.0"))
 	float SteeringGain = 1.f;
-	
+
 	/**
 	 * Desired speed when the racing target is approximately straight ahead.
 	 * This is the AI vehicle's maximum normal racing speed.
@@ -46,7 +54,7 @@ protected:
 	 * Lower values make the AI safer but slower through sharp turns.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Speed", meta = (ClampMin = "1.0", ForceUnits = "km/h"))
-	float CornerTargetSpeedKmh = 25.f;
+	float CornerTargetSpeedKmh = 35.f;
 
 	/**
 	 * Speed difference that produces full throttle or full brake.
@@ -61,7 +69,7 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Speed", meta = (ClampMin = "0.0", ForceUnits = "km/h"))
 	float BrakeDeadZoneKmh = 5.f;
-	
+
 	/**
 	* Distance to the first spline direction sample.
 	*/
@@ -80,7 +88,25 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Corner Prediction", meta = (ClampMin = "1.0", ClampMax = "180.0", Units = "deg"))
 	float FullTurnAngleDegrees = 45.f;
-	
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Corner Prediction", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float FarTurnInfluence = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Avoidance", meta = (ClampMin = "100.0", ForceUnits = "cm"))
+	float VehicleDetectionDistanceCm = 1200.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Avoidance", meta = (ClampMin = "10.0", ForceUnits = "cm"))
+	float VehicleDetectionRadiusCm = 75.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Avoidance", meta = (ClampMin = "0.0", ForceUnits = "cm"))
+	float VehicleDetectionHeightCm = 50.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Avoidance", meta = (ClampMin = "0.0", ForceUnits = "km/h"))
+	float BlockedLaneTargetSpeedKmh = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Avoidance", meta = (ClampMin = "0.0", ForceUnits = "cm"))
+	float LaneChangeCompletionToleranceCm = 10.f;
+
 	/**
 	* Vehicle speed below which the AI may be considered stuck.
 	*/
@@ -98,47 +124,67 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Recovery", meta = (ClampMin = "0.1", Units = "s"))
 	float StuckTimeThreshold = 4.f;
-	
+
 	/**
 	* Time during which stuck detection is disabled after a recovery.
 	* Allows the vehicle physics to settle and resume movement.
 	*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Recovery", meta = (ClampMin = "0.0", Units = "s"))
 	float RecoveryCooldown = 2.f;
-	
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "AI|Debug", meta = (ForceUnits = "cm"))
+	float CurrentLateralOffsetCm = 0.f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Debug")
 	bool bDrawDrivingDebug = true;
-	
+
 private:
-	
+
 	bool CanDrive() const;
-	
+
 	void SetDrivingEnabled(bool bEnabled);
-	
+
 	void FindDrivingLine();
 
 	bool UpdateStuckDetection(float DeltaSeconds);
 	void RequestRecovery();
-	
+
+	void UpdateLateralOffset(float DeltaSeconds);
+
+	float CalculateLaneOffsetCm(int32 LaneIndex) const;
+
+	bool IsLaneBlocked(int32 LaneIndex, float CurrentSplineDistance) const;
+
+	bool TryChangeToFreeAdjacentLane(float CurrentSplineDistance);
+
+	bool IsLaneChangeInProgress() const;
+
 	static float NormalizeSplineDistance(const USplineComponent& SplineComponent, const float Distance);
-	
+
 	bool TryGetDrivingTarget(FVector& OutTargetLocation, float& OutCurrentSplineDistance) const;
-	
+
 	float CalculateSteeringInput(const FVector& TargetLocation) const;
-	
+
 	float CalculateTargetSpeedKmh(float TurnAmount) const;
-	
+
+	float CalculateDirectionChangeAmount(const FVector& FromDirection, const FVector& ToDirection) const;
+
 	float CalculateUpcomingTurnAmount(const float CurrentSplineDistance) const;
-	
+
 	bool ApplyDrivingInput(float SteeringInput, float TargetSpeedKmh);
-	
-	void DrawDrivingDebug(const FVector& TargetLocation, float SteeringInput, float UpcomingTurnAmount) const;
-	
+
+	void DrawDrivingDebug(const FVector& TargetLocation, float SteeringInput, float UpcomingTurnAmount, float TargetSpeedKmh, bool bIsLaneBlocked) const;
+
 	TWeakObjectPtr<AOnlineRacingPawn> VehiclePawn;
 	TWeakObjectPtr<AOnlineRacingDrivingLine> DrivingLine;
-	
+
+	int32 BaseLaneIndex = INDEX_NONE;
+	int32 TargetLaneIndex = INDEX_NONE;
+	int32 DrivingLaneCount = 0;
+
 	float StuckTime = 0.f;
 	float RecoveryCooldownRemaining = 0.f;
-	
+	float TargetLateralOffsetCm = 0.f;
+
 	bool bDrivingEnabled = false;
 };

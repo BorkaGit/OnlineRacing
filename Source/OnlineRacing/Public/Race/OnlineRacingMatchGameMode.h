@@ -39,6 +39,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Race|AI", meta = (ClampMin = "0", ClampMax = "3"))
 	int32 BotCount = 1;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Race|AI", meta = (ClampMin = "1", ClampMax = "3"))
+	int32 AILaneCount = 2;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Race|AI")
 	TSubclassOf<AOnlineRacingAIController> AIControllerClass;
 

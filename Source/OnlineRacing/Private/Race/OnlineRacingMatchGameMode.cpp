@@ -474,6 +474,11 @@ bool AOnlineRacingMatchGameMode::SpawnBots()
 			return false;
 		}
 
+		const int32 ValidLaneCount = FMath::Max(AILaneCount, 1);
+		const int32 LaneIndex = BotIndex % ValidLaneCount;
+
+		BotController->ConfigureDrivingLane(LaneIndex, ValidLaneCount);
+
 		UE_LOG(LogOnlineRacing, Display, TEXT("[Server][Race] Spawned bot %d at grid index %d."), BotIndex + 1, GridStart->GetGridIndex());
 	}
 
