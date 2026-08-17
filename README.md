@@ -110,7 +110,15 @@ Implemented layers:
 - one-shot upshift audio;
 - logarithmically scaled collision impacts with a per-vehicle cooldown.
 
-The current audio task is surface-dependent tire presentation. Chaos wheel contacts already expose the dominant `EPhysicalSurface`; the remaining work is to add and smoothly mix the corresponding tire loops in MetaSound.
+Physical surfaces currently affect vehicle handling through their friction settings. Surface-dependent tire sound is intentionally deferred so it does not delay multiplayer and session work.
+
+### Deferred audio TODO: physical surfaces
+
+- keep `EPhysicalSurface` detection in vehicle telemetry as the presentation input;
+- add independent smoothed MetaSound weights rather than a two-surface blend parameter;
+- validate Asphalt and Gravel first, then extend the same path to Grass, Mud, and Ice if suitable recordings are available;
+- apply surface selection to tire-roll and skid layers without changing engine or wind audio;
+- verify transitions at surface boundaries and profile the additional looping voices in Audio Insights.
 
 ## Content
 
@@ -166,7 +174,7 @@ For meaningful network testing, use separate server/client worlds and PIE networ
 
 ## Roadmap
 
-1. **Finish the bounded audio milestone** - introduce scalable surface-weight mixing, validate it first with Asphalt and Gravel tire layers, expose audio values in the debug HUD, and profile with Audio Insights. Do not add more audio layers before this pass is verified.
+1. **Close the current audio pass** - expose the implemented audio values in the debug HUD and run an Audio Insights profiling pass. Surface-dependent tire sounds remain a deferred TODO.
 2. **Validate local multiplayer** - test 2-4 racers with AI, late joins, disconnects, listen-server behavior, and Chaos movement under network emulation.
 3. **Online Subsystem Null** - implement session create/find/join/leave and listen-server travel in a `GameInstanceSubsystem`.
 4. **Steam** - reuse the session flow for Steam lobbies, joining, and friend invitations.
