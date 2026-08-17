@@ -3,6 +3,7 @@
 
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
+#include "PhysicalMaterials/PhysicalMaterial.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "GameFramework/Actor.h"
 
@@ -69,6 +70,10 @@ void UOnlineRacingVehicleTelemetryComponent::TickComponent(float DeltaTime, ELev
 
 void UOnlineRacingVehicleTelemetryComponent::UpdateWheelTelemetry()
 {
+	CurrentSurfaceType = SurfaceType_Default;
+
+	float HighestSpringForce = -1.f;
+
 	WheelsInContact = 0;
 	bAnyWheelSlipping = false;
 	bAnyWheelSkidding = false;
@@ -82,6 +87,13 @@ void UOnlineRacingVehicleTelemetryComponent::UpdateWheelTelemetry()
 		if (!WheelStatus.bIsValid || !WheelStatus.bInContact)
 		{
 			continue;
+		}
+
+		if (WheelStatus.SpringForce > HighestSpringForce)
+		{
+			HighestSpringForce = WheelStatus.SpringForce;
+
+			CurrentSurfaceType = UPhysicalMaterial::DetermineSurfaceType(WheelStatus.PhysMaterial.Get());
 		}
 
 		++WheelsInContact;

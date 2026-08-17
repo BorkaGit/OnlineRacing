@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Chaos/ChaosEngineInterface.h"
 #include "Components/ActorComponent.h"
 #include "OnlineRacingVehicleTelemetryComponent.generated.h"
 
@@ -48,6 +49,11 @@ public:
 	FORCEINLINE float GetMaxSlipMagnitude() const { return MaxSlipMagnitude; }
 
 	FORCEINLINE float GetMaxSkidMagnitude() const { return MaxSkidMagnitude; }
+
+	FORCEINLINE EPhysicalSurface GetCurrentSurfaceType() const
+	{
+		return CurrentSurfaceType.GetValue();
+	}
 
 protected:
 	virtual void BeginPlay() override;
@@ -99,6 +105,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Vehicle|Telemetry", meta = (ForceUnits = "cm/s"))
 	float MaxSkidMagnitude = 0.f;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Vehicle|Telemetry")
+	TEnumAsByte<EPhysicalSurface> CurrentSurfaceType = SurfaceType_Default;
 
 	TWeakObjectPtr<UChaosWheeledVehicleMovementComponent> VehicleMovement;
 
