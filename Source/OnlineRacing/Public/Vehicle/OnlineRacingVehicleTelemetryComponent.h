@@ -55,6 +55,8 @@ public:
 		return CurrentSurfaceType.GetValue();
 	}
 
+	bool GetWheelTelemetry(int32 WheelIndex, bool& bOutInContact, float& OutSlipMagnitude, float& OutSkidMagnitude) const;
+
 protected:
 	virtual void BeginPlay() override;
 

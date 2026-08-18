@@ -6,6 +6,7 @@
 #include "WheeledVehiclePawn.h"
 #include "OnlineRacingPawn.generated.h"
 
+class UOnlineRacingVehicleEffectsComponent;
 class USynthComponentMoto;
 class UOnlineRacingVehicleAudioComponent;
 class UCameraComponent;
@@ -41,6 +42,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USynthComponentMoto> EngineSynth;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UOnlineRacingVehicleEffectsComponent> VehicleEffects;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UChaosWheeledVehicleMovementComponent> ChaosVehicleMovement;

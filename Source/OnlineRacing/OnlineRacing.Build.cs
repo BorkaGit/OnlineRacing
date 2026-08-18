@@ -37,7 +37,8 @@ public class OnlineRacing : ModuleRules
 			"ChaosVehiclesCore",
 			"MotoSynth",
 			"SignalProcessing",
-			"Slate"
+			"Slate",
+			"Niagara"
 		});
 	}
 }

@@ -16,6 +16,39 @@ UOnlineRacingVehicleTelemetryComponent::UOnlineRacingVehicleTelemetryComponent()
 	PrimaryComponentTick.TickGroup = TG_PostPhysics;
 }
 
+bool UOnlineRacingVehicleTelemetryComponent::GetWheelTelemetry(
+	int32 WheelIndex,
+	bool& bOutInContact,
+	float& OutSlipMagnitude,
+	float& OutSkidMagnitude) const
+{
+	bOutInContact = false;
+	OutSlipMagnitude = 0.f;
+	OutSkidMagnitude = 0.f;
+
+	if (!VehicleMovement.IsValid())
+	{
+		return false;
+	}
+
+	if (WheelIndex < 0 || WheelIndex >= VehicleMovement->GetNumWheels())
+	{
+		return false;
+	}
+
+	const FWheelStatus& WheelState = VehicleMovement->GetWheelState(WheelIndex);
+	if (!WheelState.bIsValid)
+	{
+		return false;
+	}
+
+	bOutInContact = WheelState.bInContact;
+	OutSlipMagnitude = FMath::Abs(WheelState.SlipMagnitude);
+	OutSkidMagnitude = FMath::Abs(WheelState.SkidMagnitude);
+
+	return true;
+}
+
 void UOnlineRacingVehicleTelemetryComponent::BeginPlay()
 {
 	Super::BeginPlay();

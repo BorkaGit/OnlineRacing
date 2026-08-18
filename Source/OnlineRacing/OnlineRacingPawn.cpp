@@ -15,6 +15,7 @@
 #include "OnlineRacingPlayerController.h"
 #include "Race/OnlineRacingMatchGameMode.h"
 #include "SynthComponents/SynthComponentMoto.h"
+#include "Vehicle/OnlineRacingVehicleEffectsComponent.h"
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 AOnlineRacingPawn::AOnlineRacingPawn()
@@ -58,6 +59,8 @@ AOnlineRacingPawn::AOnlineRacingPawn()
 	EngineSynth->SetupAttachment(GetMesh());
 	EngineSynth->bAutoActivate = false;
 	EngineSynth->bAllowSpatialization = true;
+
+	VehicleEffects = CreateDefaultSubobject<UOnlineRacingVehicleEffectsComponent>(TEXT("Vehicle Effects"));
 }
 
 void AOnlineRacingPawn::BeginPlay()
