@@ -4,6 +4,8 @@ OnlineRacing is a compact Unreal Engine 5.8 C++ portfolio project: a 2-4 player 
 
 The goal is a finished vertical slice that demonstrates Unreal C++, multiplayer gameplay architecture, vehicle telemetry, and vehicle audio. Core gameplay and networking live in C++; Blueprints are used for asset setup, UI layout, animation, tuning, and presentation.
 
+![Gameplay](assets/gameplay.gif)
+
 ## Current milestone
 
 The project currently has a playable race foundation with a server-controlled AI opponent and a functional first vehicle-audio pass:
