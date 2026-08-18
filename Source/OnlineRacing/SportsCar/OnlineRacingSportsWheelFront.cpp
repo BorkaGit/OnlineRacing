@@ -5,10 +5,10 @@
 
 UOnlineRacingSportsWheelFront::UOnlineRacingSportsWheelFront()
 {
-	WheelRadius = 39.0f;
-	WheelWidth = 35.0f;
-	FrictionForceMultiplier = 3.0f;
+	WheelRadius = 39.f;
+	WheelWidth = 35.f;
+	FrictionForceMultiplier = 3.f;
 
-	MaxBrakeTorque = 4500.0f;
-	MaxHandBrakeTorque = 6000.0f;
+	MaxBrakeTorque = 4500.f;
+	MaxHandBrakeTorque = 6000.f;
 }

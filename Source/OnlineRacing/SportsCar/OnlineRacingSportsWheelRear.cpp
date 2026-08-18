@@ -6,11 +6,11 @@
 UOnlineRacingSportsWheelRear::UOnlineRacingSportsWheelRear()
 {
 	WheelRadius = 40.f;
-	WheelWidth = 40.0f;
-	FrictionForceMultiplier = 4.0f;
+	WheelWidth = 40.f;
+	FrictionForceMultiplier = 4.f;
 	SideSlipModifier = 0.6f;
-	SlipThreshold = 100.0f;
-	SkidThreshold = 100.0f;
-	MaxSteerAngle = 0.0f;
+	SlipThreshold = 100.f;
+	SkidThreshold = 100.f;
+	MaxSteerAngle = 0.f;
 	MaxHandBrakeTorque = 8000.0f;
 }
