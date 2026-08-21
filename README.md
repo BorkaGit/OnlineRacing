@@ -4,8 +4,6 @@ OnlineRacing is a compact Unreal Engine 5.8 C++ portfolio project: a 2-4 player 
 
 The goal is a finished vertical slice that demonstrates Unreal C++, multiplayer gameplay architecture, vehicle telemetry, and vehicle audio. Core gameplay and networking live in C++; Blueprints are used for asset setup, UI layout, animation, tuning, and presentation.
 
-![Gameplay](assets/gameplay.gif)
-
 ## Current milestone
 
 The project currently has a validated Online Subsystem Null flow and a configured Steam backend leading from the main menu to a listen-server race, together with server-controlled AI and a functional vehicle-audio pass. The checked-in configuration selects Steam by default; cross-account Steam validation is the current networking milestone.
@@ -34,6 +32,8 @@ The project currently has a validated Online Subsystem Null flow and a configure
 - telemetry-driven rear-wheel Niagara smoke with wheel-contact validation;
 - a debug HUD with telemetry, race state, network roles, net mode, and ping;
 - PIE listen-server gameplay with multiple players.
+
+![Gameplay](assets/gameplay.gif)
 
 The original Vehicle Template time-trial variant remains in the repository as reference content. The multiplayer race uses separate project-specific C++ classes and assets.
 
