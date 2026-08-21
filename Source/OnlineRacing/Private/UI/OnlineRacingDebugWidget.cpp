@@ -4,9 +4,9 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerState.h"
 
-#include "OnlineRacingPawn.h"
-#include "Race/OnlineRacingMatchGameState.h"
-#include "Race/OnlineRacingMatchPlayerState.h"
+#include "Vehicle/OnlineRacingPawn.h"
+#include "Framework/GameStates/OnlineRacingMatchGameState.h"
+#include "Framework/PlayerStates/OnlineRacingPlayerState.h"
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 namespace
@@ -62,7 +62,7 @@ void UOnlineRacingDebugWidget::UpdateDebugData(const AOnlineRacingPawn& VehicleP
 
 	FString RaceText = TEXT("Race state: unavailable");
 	const AOnlineRacingMatchGameState* const RaceGameState = VehiclePawn.GetWorld()->GetGameState<AOnlineRacingMatchGameState>();
-	const AOnlineRacingMatchPlayerState* const RacePlayerState = Cast<AOnlineRacingMatchPlayerState>(PlayerState);
+	const AOnlineRacingPlayerState* const RacePlayerState = Cast<AOnlineRacingPlayerState>(PlayerState);
 	if (IsValid(RaceGameState) && IsValid(RacePlayerState))
 	{
 		RaceText = FString::Printf(

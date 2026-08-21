@@ -5,13 +5,13 @@
 
 #include "EngineUtils.h"
 #include "OnlineRacing.h"
-#include "OnlineRacingPawn.h"
+#include "Vehicle/OnlineRacingPawn.h"
 #include "AI/OnlineRacingDrivingLine.h"
 #include "Components/SplineComponent.h"
 #include "GameFramework/PlayerState.h"
-#include "Race/OnlineRacingMatchGameMode.h"
-#include "Race/OnlineRacingMatchGameState.h"
-#include "Race/OnlineRacingMatchPlayerState.h"
+#include "Framework/GameModes/OnlineRacingMatchGameMode.h"
+#include "Framework/GameStates/OnlineRacingMatchGameState.h"
+#include "Framework/PlayerStates/OnlineRacingPlayerState.h"
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 
@@ -110,7 +110,7 @@ bool AOnlineRacingAIController::CanDrive() const
 		return false;
 	}
 
-	const AOnlineRacingMatchPlayerState* const RacePlayerState = VehiclePawn->GetPlayerState<AOnlineRacingMatchPlayerState>();
+	const AOnlineRacingPlayerState* const RacePlayerState = VehiclePawn->GetPlayerState<AOnlineRacingPlayerState>();
 	if (!IsValid(RacePlayerState))
 	{
 		return false;

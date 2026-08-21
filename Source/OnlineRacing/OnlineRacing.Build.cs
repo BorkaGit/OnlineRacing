@@ -18,14 +18,15 @@ public class OnlineRacing : ModuleRules
 			"EnhancedInput",
 			"InputCore",
 			"PhysicsCore",
-			"UMG"
+			"UMG",
+			"OnlineSubsystem",
+			"OnlineSubsystemNull"
 		});
 
 		PublicIncludePaths.AddRange(new string[]
 		{
 			"OnlineRacing",
 			"OnlineRacing/OffroadCar",
-			"OnlineRacing/SportsCar",
 			"OnlineRacing/Variant_OffRoad",
 			"OnlineRacing/Variant_TimeTrial",
 			"OnlineRacing/Variant_TimeTrial/UI"

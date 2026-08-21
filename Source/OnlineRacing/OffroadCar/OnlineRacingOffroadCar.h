@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OnlineRacingPawn.h"
+#include "Vehicle/OnlineRacingPawn.h"
 #include "OnlineRacingOffroadCar.generated.h"
 
 class UStaticMeshComponent;

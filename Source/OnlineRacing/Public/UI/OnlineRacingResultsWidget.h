@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Blueprint/UserWidget.h"
-#include "Race/OnlineRacingMatchGameState.h"
+#include "Framework/GameStates/OnlineRacingMatchGameState.h"
 #include "OnlineRacingResultsWidget.generated.h"
 
 class UTextBlock;

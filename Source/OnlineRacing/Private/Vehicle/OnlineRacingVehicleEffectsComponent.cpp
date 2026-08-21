@@ -8,7 +8,7 @@
 #include "NiagaraFunctionLibrary.h"
 
 #include "OnlineRacing.h"
-#include "OnlineRacingPawn.h"
+#include "Vehicle/OnlineRacingPawn.h"
 #include "Vehicle/OnlineRacingVehicleTelemetryComponent.h"
 
 namespace

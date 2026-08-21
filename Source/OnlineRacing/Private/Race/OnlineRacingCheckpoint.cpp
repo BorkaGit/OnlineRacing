@@ -4,8 +4,8 @@
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
 
-#include "OnlineRacingPawn.h"
-#include "Race/OnlineRacingMatchGameMode.h"
+#include "Vehicle/OnlineRacingPawn.h"
+#include "Framework/GameModes/OnlineRacingMatchGameMode.h"
 
 AOnlineRacingCheckpoint::AOnlineRacingCheckpoint()
 {

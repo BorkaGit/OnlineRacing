@@ -11,8 +11,8 @@
 #include "Widgets/Input/SVirtualJoystick.h"
 
 #include "OnlineRacing.h"
-#include "OnlineRacingPawn.h"
-#include "OnlineRacingUI.h"
+#include "Vehicle/OnlineRacingPawn.h"
+#include "UI/OnlineRacingUI.h"
 #include "TimeTrialGameMode.h"
 #include "TimeTrialTrackGate.h"
 #include "TimeTrialUI.h"

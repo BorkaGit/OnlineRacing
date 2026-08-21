@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OnlineRacingWheelFront.h"
+#include "Vehicle/Wheels/OnlineRacingWheelFront.h"
 #include "OnlineRacingOffroadWheelFront.generated.h"
 
 /**
@@ -13,7 +13,7 @@ UCLASS()
 class UOnlineRacingOffroadWheelFront : public UOnlineRacingWheelFront
 {
 	GENERATED_BODY()
-	
+
 public:
 	UOnlineRacingOffroadWheelFront();
 };
